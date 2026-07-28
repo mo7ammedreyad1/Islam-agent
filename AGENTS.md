@@ -76,38 +76,53 @@
   <canvas id="stage" width="1280" height="720"></canvas>
 
   <script type="module">
-    import { CanvasSource, Conversion } from '[https://esm.sh/mediabunny](https://esm.sh/mediabunny)';
-    import { registerAacEncoder } from '[https://esm.sh/@mediabunny/aac-encoder](https://esm.sh/@mediabunny/aac-encoder)';
+    import { CanvasSource, Conversion, Output, Mp4OutputFormat, BufferTarget } from 'https://esm.sh/mediabunny';
+    import { registerAacEncoder } from 'https://esm.sh/@mediabunny/aac-encoder';
 
-    // ضبط الحالة المبدئية للـ Runner
     window.__ofoqStatus = 'pending';
 
     async function initAndRender() {
       try {
-        // 1. تسجيل مُرمز AAC المخصص
+        // 1. تسجيل مُرمز AAC
         await registerAacEncoder();
 
         const canvas = document.getElementById('stage');
         const ctx = canvas.getContext('2d');
 
-        // 2. إعداد عملية التحديث والرسم على الـ Canvas
-        // (قم بإضافة كود الرسم المتحرك وتنفيذ حركة النصوص والصوت هنا)
-
-        // 3. معالجة وتصدير الميديا عبر Mediabunny
-        // بعد انتهاء التصدير والحصول على الـ Buffer/Blob الخاص بالفيديو:
+        // 2. إعداد المصدر والخرج مع تحديد الكوديك صراحةً
+        const source = new CanvasSource(canvas, { fps: 30, duration: 10 });
         
-        // تحويل النتيجة إلى Base64 لتسليمها لـ agent.js
-        /* 
-        const arrayBuffer = await blob.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
+        const output = new Output({
+          target: new BufferTarget(),
+          format: new Mp4OutputFormat(),
+          video: {
+            codec: 'avc', // 👈 إجباري لمنع خطأ undefined codec
+            width: 1280,
+            height: 720,
+            fps: 30,
+            bitrate: 4_000_000
+          },
+          audio: {
+            codec: 'aac',
+            sampleRate: 44100,
+            numberOfChannels: 2
+          }
+        });
+
+        // 3. التنفيذ والتحويل إلى Base64
+        const conversion = await Conversion.init({ input: source, output: output });
+        await conversion.execute();
+
+        const buffer = output.target.buffer;
+        const bytes = new Uint8Array(buffer);
         let binary = '';
         for (let i = 0; i < bytes.byteLength; i++) {
           binary += String.fromCharCode(bytes[i]);
         }
+
         window.__ofoqBase64 = btoa(binary);
-        window.__ofoqFilename = 'surah_output.mp4';
-        window.__ofoqStatus = 'done'; 
-        */
+        window.__ofoqFilename = 'output.mp4';
+        window.__ofoqStatus = 'done';
 
       } catch (err) {
         console.error('Render Error:', err);
