@@ -39,24 +39,39 @@ async function renderVideoCli(filePath) {
       args: ['--autoplay-policy=no-user-gesture-required'],
     });
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+
+    // متغير لالتقاط أخطاء الـ JS داخل الصفحة فور وقوعها
+    let pageHasFatalError = null;
+
     page.on('console', (msg) => log('[page] ' + msg.text()));
-    page.on('pageerror', (err) => log('[pageerror] ' + err.message));
+    page.on('pageerror', (err) => {
+      log('[pageerror] ' + err.message);
+      pageHasFatalError = err.message; // تسجيل الخطأ فوراً
+    });
 
     const url = `http://localhost:${PORT}/${filePath}`;
     log('فتح: ' + url);
     await page.goto(url, { waitUntil: 'load' });
 
-    const TIMEOUT_MS = 8 * 60 * 1000;
+    // ⚡ تعديل: تقليل الوقت من 8 دقائق إلى دقيقتين فقط
+    const TIMEOUT_MS = 2 * 60 * 1000; 
     const start = Date.now();
     let status = 'pending';
+
     while (Date.now() - start < TIMEOUT_MS) {
+      // إذا حدث خطأ JS قاتل في الصفحة، أوقف الانتظار فوراً!
+      if (pageHasFatalError) {
+        status = 'error';
+        break;
+      }
+
       status = await page.evaluate(() => window.__ofoqStatus || 'pending');
       if (status === 'done' || status === 'error') break;
       await new Promise((r) => setTimeout(r, 1500));
     }
 
     if (status !== 'done') {
-      const errMsg = await page.evaluate(() => window.__ofoqError || 'timeout أو حالة غير معروفة');
+      const errMsg = pageHasFatalError || await page.evaluate(() => window.__ofoqError || 'timeout أو حالة غير معروفة');
       console.log(JSON.stringify({ success: false, error: errMsg }));
       process.exitCode = 1;
       return;
@@ -82,6 +97,8 @@ async function renderVideoCli(filePath) {
     server.close();
   }
 }
+
+
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -131,7 +148,7 @@ async function runTerminal({ command }) {
     const output = execSync(command, {
       cwd: WORK_DIR,
       env: process.env,
-      timeout: 8 * 60 * 1000,
+      timeout: 2 * 60 * 1000, // ⚡ خفض المهلة إلى دقيقتين (120,000ms)
       maxBuffer: 30 * 1024 * 1024,
       shell: '/bin/bash',
     }).toString();
@@ -146,6 +163,7 @@ async function runTerminal({ command }) {
     };
   }
 }
+
 
 const functionDeclarations = [
   {
