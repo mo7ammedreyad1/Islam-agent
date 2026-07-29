@@ -34,5 +34,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
           TASK_JSON: ${{ github.event.inputs.task }}
+          # CALLBACK_URL: هيتحدد لاحقًا لما نجهز الـ endpoint
         run: node agent.js
