@@ -33,6 +33,11 @@ async function renderVideoCli(filePath) {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   const server = await startStaticServer();
   let browser;
+  const consoleLogs = [];
+  const failedRequests = [];
+  let firstPageError = null;
+  let firstPageErrorAt = null;
+
   try {
     browser = await chromium.launch({
       channel: 'chrome',
@@ -40,39 +45,46 @@ async function renderVideoCli(filePath) {
     });
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 
-    // متغير لالتقاط أخطاء الـ JS داخل الصفحة فور وقوعها
-    let pageHasFatalError = null;
-
-    page.on('console', (msg) => log('[page] ' + msg.text()));
+    page.on('console', (msg) => consoleLogs.push(`[console:${msg.type()}] ${msg.text()}`));
     page.on('pageerror', (err) => {
-      log('[pageerror] ' + err.message);
-      pageHasFatalError = err.message; // تسجيل الخطأ فوراً
+      consoleLogs.push('[pageerror] ' + err.message);
+      if (!firstPageError) { firstPageError = err.message; firstPageErrorAt = Date.now(); }
+    });
+    page.on('requestfailed', (req) => {
+      failedRequests.push(`${req.url()} — ${req.failure()?.errorText || 'فشل بدون سبب واضح'}`);
+    });
+    page.on('response', (res) => {
+      if (res.status() >= 400) failedRequests.push(`HTTP ${res.status()} — ${res.url()}`);
     });
 
     const url = `http://localhost:${PORT}/${filePath}`;
     log('فتح: ' + url);
     await page.goto(url, { waitUntil: 'load' });
 
-    // ⚡ تعديل: تقليل الوقت من 8 دقائق إلى دقيقتين فقط
-    const TIMEOUT_MS = 2 * 60 * 1000; 
+    const TIMEOUT_MS = 8 * 60 * 1000;
+    const EARLY_FAIL_GRACE_MS = 8000; // لو حصل pageerror بدري، مستنينش الـ 8 دقايق كاملة
     const start = Date.now();
     let status = 'pending';
 
     while (Date.now() - start < TIMEOUT_MS) {
-      // إذا حدث خطأ JS قاتل في الصفحة، أوقف الانتظار فوراً!
-      if (pageHasFatalError) {
-        status = 'error';
-        break;
-      }
-
       status = await page.evaluate(() => window.__ofoqStatus || 'pending');
       if (status === 'done' || status === 'error') break;
+      if (firstPageError && Date.now() - firstPageErrorAt > EARLY_FAIL_GRACE_MS) {
+        log('اكتشاف كسر مبكر في الصفحة — إيقاف الانتظار بدل ما نستنى التايم آوت الكامل');
+        break;
+      }
       await new Promise((r) => setTimeout(r, 1500));
     }
 
+    const baseResult = {
+      console_logs: consoleLogs.slice(-80),
+      failed_requests: [...new Set(failedRequests)].slice(-30),
+    };
+
     if (status !== 'done') {
-      const errMsg = pageHasFatalError || await page.evaluate(() => window.__ofoqError || 'timeout أو حالة غير معروفة');
-      console.log(JSON.stringify({ success: false, error: errMsg }));
+      const errMsg = await page.evaluate(() => window.__ofoqError || null)
+        .catch(() => null) || firstPageError || 'timeout أو حالة غير معروفة — راجع console_logs وfailed_requests';
+      console.log(JSON.stringify({ success: false, error: errMsg, ...baseResult }));
       process.exitCode = 1;
       return;
     }
@@ -88,17 +100,21 @@ async function renderVideoCli(filePath) {
       local_path: path.relative(WORK_DIR, outPath),
       filename,
       size_bytes: buffer.length,
+      ...baseResult,
     }));
   } catch (e) {
-    console.log(JSON.stringify({ success: false, error: e.message }));
+    console.log(JSON.stringify({
+      success: false,
+      error: e.message,
+      console_logs: consoleLogs.slice(-80),
+      failed_requests: [...new Set(failedRequests)].slice(-30),
+    }));
     process.exitCode = 1;
   } finally {
     if (browser) await browser.close();
     server.close();
   }
 }
-
-
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -127,7 +143,7 @@ function startStaticServer() {
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // سلسلة نماذج احتياطية — التبديل تلقائي للي بعده لما نستنفد محاولات إعادة الاتصال
 // على النموذج الحالي. مرتبة من الأعلى قدرة للأكرم في حدود الخطة المجانية (RPM).
-const MODEL_CHAIN = (process.env.GEMINI_MODEL_CHAIN || 'gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.0-flash-preview')
+const MODEL_CHAIN = (process.env.GEMINI_MODEL_CHAIN || 'gemini-3.5-flash,gemini-2.5-flash,gemini-2.5-flash-lite')
   .split(',').map((s) => s.trim()).filter(Boolean);
 let currentModelIndex = 0;
 
@@ -135,6 +151,10 @@ const TASK_JSON = process.env.TASK_JSON || 'اعمل فيديو سورة الإ�
 const CALLBACK_URL = process.env.CALLBACK_URL || ''; // هيتحدد لاحقًا، اختياري دلوقتي
 const GH_REPO = process.env.GITHUB_REPOSITORY || '';
 const RELEASE_TAG = `render-${process.env.GITHUB_RUN_NUMBER || Date.now()}`;
+// لازم نسجّلهم فعليًا في process.env — مش بس متغيرات JS محلية — عشان يبقوا
+// متاحين كـ $RELEASE_TAG و$GH_REPO جوه أي أمر run_terminal (bash child process)
+process.env.RELEASE_TAG = RELEASE_TAG;
+process.env.GH_REPO = GH_REPO;
 const MAX_TURNS = 80;
 
 const TASK_COMPLETE_MARKER = 'TASK_COMPLETE.json';
@@ -148,7 +168,7 @@ async function runTerminal({ command }) {
     const output = execSync(command, {
       cwd: WORK_DIR,
       env: process.env,
-      timeout: 2 * 60 * 1000, // ⚡ خفض المهلة إلى دقيقتين (120,000ms)
+      timeout: 10 * 60 * 1000, // أكبر من مهلة الرندر الداخلية (8 دقايق) عشان الرندر يقدر يرجّع JSON منظم لو فشل، بدل قتل عنيف من هنا
       maxBuffer: 30 * 1024 * 1024,
       shell: '/bin/bash',
     }).toString();
@@ -163,7 +183,6 @@ async function runTerminal({ command }) {
     };
   }
 }
-
 
 const functionDeclarations = [
   {
@@ -248,28 +267,41 @@ async function callGemini(contents, systemInstruction, attempt = 1) {
     system_instruction: { parts: [{ text: systemInstruction }] },
     tools: [{ functionDeclarations }],
   };
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
+
+  let res, data;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
+      body: JSON.stringify(body),
+    });
+    data = await res.json();
+  } catch (networkErr) {
+    if (attempt < MAX_ATTEMPTS_PER_MODEL) {
+      const waitSeconds = Math.min(60, 5 * Math.pow(2, attempt));
+      log(`خطأ شبكة عند الاتصال بـ Gemini (${networkErr.message}). هستنى ${waitSeconds}s وأعيد المحاولة (${attempt}/${MAX_ATTEMPTS_PER_MODEL})...`);
+      await new Promise((r) => setTimeout(r, waitSeconds * 1000));
+      return callGemini(contents, systemInstruction, attempt + 1);
+    }
+    throw new Error(`فشل الاتصال بـ Gemini بعد عدة محاولات: ${networkErr.message}`);
+  }
 
   if (!res.ok) {
-    if (res.status === 429) {
+    const isTransient = res.status === 429 || (res.status >= 500 && res.status < 600);
+    if (isTransient) {
       if (attempt < MAX_ATTEMPTS_PER_MODEL) {
         const serverDelay = parseRetryDelaySeconds(data);
         const waitSeconds = serverDelay != null ? serverDelay + 1 : Math.min(60, 5 * Math.pow(2, attempt));
-        log(`تجاوز حد الطلبات على ${model} (429). هستنى ${waitSeconds.toFixed(1)}s وأعيد المحاولة (${attempt}/${MAX_ATTEMPTS_PER_MODEL})...`);
+        log(`خطأ مؤقت (${res.status}) على ${model}. هستنى ${waitSeconds.toFixed(1)}s وأعيد المحاولة (${attempt}/${MAX_ATTEMPTS_PER_MODEL})...`);
         await new Promise((r) => setTimeout(r, waitSeconds * 1000));
         return callGemini(contents, systemInstruction, attempt + 1);
       }
       if (currentModelIndex < MODEL_CHAIN.length - 1) {
         currentModelIndex++;
-        log(`استنفدنا محاولات ${model}. التبديل للنموذج الاحتياطي: ${MODEL_CHAIN[currentModelIndex]}`);
+        log(`استنفدنا محاولات ${model} (${res.status}). التبديل للنموذج الاحتياطي: ${MODEL_CHAIN[currentModelIndex]}`);
         return callGemini(contents, systemInstruction, 1);
       }
-      throw new Error(`استنفدنا كل النماذج في السلسلة (${MODEL_CHAIN.join(', ')}) بسبب تجاوز الحد المسموح.`);
+      throw new Error(`استنفدنا كل النماذج في السلسلة (${MODEL_CHAIN.join(', ')}) بسبب أخطاء متكررة (${res.status}).`);
     }
     throw new Error(`Gemini API error (${res.status}): ${JSON.stringify(data).slice(0, 500)}`);
   }
@@ -436,4 +468,4 @@ if (args[0] === 'render') {
     console.error('خطأ فادح في الـ Agent:', err);
     process.exit(1);
   });
-}
+    }
