@@ -40,7 +40,7 @@ const RELEASE_TAG = `render-${process.env.GITHUB_RUN_NUMBER || Date.now()}`;
 // متاحين كـ $RELEASE_TAG و$GH_REPO جوه أي أمر run_terminal (bash child process)
 process.env.RELEASE_TAG = RELEASE_TAG;
 process.env.GH_REPO = GH_REPO;
-const MAX_TURNS = 80;
+const MAX_TURNS = 200;
 
 const TASK_COMPLETE_MARKER = 'TASK_COMPLETE.json';
 
@@ -48,8 +48,8 @@ const TASK_COMPLETE_MARKER = 'TASK_COMPLETE.json';
 // الأداة الوحيدة: تنفيذ أمر شل حقيقي
 // ---------------------------------------------------------------------------
 async function runTerminal({ command }) {
-  const OUTPUT_LIMIT = 40000; // كان 6000 — ده كان بيقطع ملفات كبيرة (scene.html أو ملفات هوية .md) بصمت
-  const ERROR_LIMIT = 20000;  // كان 3000 — نفس المشكلة لو الفشل نفسه فيه output كبير
+  const OUTPUT_LIMIT = 90000; // كان 6000 — ده كان بيقطع ملفات كبيرة (scene.html أو ملفات هوية .md) بصمت
+  const ERROR_LIMIT = 90000;  // كان 3000 — نفس المشكلة لو الفشل نفسه فيه output كبير
 
   function withTruncationNotice(text, limit) {
     if (text.length <= limit) return text;
