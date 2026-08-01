@@ -1,14 +1,14 @@
-# هوية "الرَّق الدافئ" (Warm Parchment) — تلاوة بس، بدون تفسير
+# هوية "الرَّق الدافئ" (Warm Parchment) — تلاوة قرآنية بس، بدون تفسير
 
 ## الوصف
 نفس لوحة ألوان `brown-style.md` (رَق دافئ، بني إسبريسو، ذهبي) لكن **بدون بطاقة
 تفسير خالص** — تلاوة نظيفة، النص بس في منتصف الشاشة بحركة ظهور متتابع كلمة
-كلمة. مناسبة لفيديوهات التلاوة الخالصة من غير أي شرح.
+كلمة.
 
+- **شكل المحتوى**: آيات قرآنية بس، بدون تفسير.
+- **الأصول**: صوت تلاوة آية بآية من `everyayah.com`. مفيش صورة ولا فيديو خارجي.
 - **الأبعاد**: 1080×1920 (Shorts عمودي، 9:16)، 60fps.
 - **حالة الاستخدام**: تلاوة سورة كاملة أو مقطع منها، من غير تفسير.
-- **حقول `SURAH_VERSES`**: `text` بس، مفيش حاجة إضافية مطلوبة (لا تفسير ولا
-  غيره).
 
 ## روابط الخطوط
 ```html
@@ -86,11 +86,28 @@ canvas {
 <canvas id="shortsCanvas" width="1080" height="1920"></canvas>
 ```
 
-## كود JS — تصميم الهوية
-انسخ الكتلة دي حرفيًا في "منطقة 2/3 — تصميم الهوية" جوه `scene.html`.
+## كود JS — الهوية بالكامل (محتوى + أصول + تصميم)
+انسخ الكتلة دي حرفيًا في مكان "🎨 كود ملف الهوية بالكامل" جوه `scene.html`.
 
 ```js
-// --- CONFIG & PALETTE (Vertical Shorts 1080x1920 — الرَّق الدافئ، بدون تفسير) ---
+// ================================================================
+// ⬛ منطقة قابلة للتعديل لكل فيديو جديد — غيّر هنا بس
+// ================================================================
+const SURAH_NUMBER = '112';                 // رقم السورة، 3 أرقام، مستخدم في رابط الصوت
+const RECITER_ID = 'Alafasy_128kbps';       // مجلد القارئ في everyayah.com
+const RECITER_DISPLAY_NAME = 'تلاوة الشيخ مشاري راشد العفاسي';
+const SURAH_DISPLAY_NAME = 'سُورَةُ الْإِخْلَاصِ';
+const OUTPUT_FILENAME = 'Quran_Shorts_Al_Ikhlas';
+const SURAH_VERSES = [
+    // نص كل آية (text) — من نتيجة curl فعلية على api.alquran.cloud
+    // (edition=quran-uthmani)، مش من الذاكرة.
+    { text: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝١' },
+    { text: 'اللَّهُ الصَّمَدُ ۝٢' },
+    { text: 'لَمْ يَلِدْ وَلَمْ يُولَدْ ۝٣' },
+    { text: 'وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ۝٤' }
+];
+// ================================================================
+
 let CONFIG = { fps: 60, width: 1080, height: 1920, duration: 35.0 };
 const QURAN_FONT = "'Amiri', serif";
 const HEADER_FONT = "'Reem Kufi', sans-serif";
@@ -99,12 +116,69 @@ const PALETTE = {
     bgTop: "#FAF7F2",       // Warm Parchment
     bgBottom: "#EFE8DC",    // Soft Sand / Light Beige
     textPrimary: "#2C1D11", // Deep Espresso Brown
-    textMuted: "#6B5343",   // Warm Terracotta / Walnut Brown
     accentGold: "#C08A3E",  // Warm Quranic Ochre Gold
-    cardBg: "#FFFFFF",      // Clean White Panel Fill
-    lineBorder: "rgba(192, 138, 62, 0.25)",
-    goldGlow: "rgba(192, 138, 62, 0.12)"
+    lineBorder: "rgba(192, 138, 62, 0.25)"
 };
+
+let audioBuffer = null;   // بيتحدد جوه prepareIdentity()
+let parsedScenes = [];    // بيتحدد جوه prepareIdentity()
+
+async function fetchAyahAudio(ayahIndex) {
+    const ayahNum = String(ayahIndex).padStart(3, '0');
+    const url = `https://www.everyayah.com/data/${RECITER_ID}/${SURAH_NUMBER}${ayahNum}.mp3`;
+    const res = await fetch(url);
+    const arrayBuf = await res.arrayBuffer();
+    if (arrayBuf.byteLength < 5000) {
+        throw new Error(`حجم غير طبيعي (${arrayBuf.byteLength} بايت) للآية ${ayahIndex} — راجع الرابط`);
+    }
+    return arrayBuf;
+}
+
+async function prepareIdentity() {
+    logToConsole(`جاري تحميل صوت آيات ${SURAH_DISPLAY_NAME} آية بآية من EveryAyah.com (${RECITER_DISPLAY_NAME})...`);
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ayahBuffers = [];
+    let totalSamples = 0;
+
+    for (let i = 1; i <= SURAH_VERSES.length; i++) {
+        const arrayBuf = await fetchAyahAudio(i);
+        const decodedBuf = await audioCtx.decodeAudioData(arrayBuf);
+        ayahBuffers.push(decodedBuf);
+        totalSamples += decodedBuf.length;
+        logToConsole(`تم تحميل الآية ${i} بنجاح ✓`);
+    }
+
+    if (ayahBuffers.length === 0) throw new Error("تعذر جلب ملفات الصوت من EveryAyah");
+
+    const sampleRate = ayahBuffers[0].sampleRate;
+    const channelsCount = ayahBuffers[0].numberOfChannels;
+    audioBuffer = audioCtx.createBuffer(channelsCount, totalSamples, sampleRate);
+
+    let sampleOffset = 0;
+    let timeOffset = 0.0;
+    const rawCues = [];
+
+    for (let i = 0; i < ayahBuffers.length; i++) {
+        const buf = ayahBuffers[i];
+        for (let ch = 0; ch < channelsCount; ch++) {
+            audioBuffer.getChannelData(ch).set(buf.getChannelData(ch), sampleOffset);
+        }
+        const duration = buf.duration;
+        rawCues.push({ id: i + 1, start: timeOffset, end: timeOffset + duration, ...SURAH_VERSES[i] });
+        sampleOffset += buf.length;
+        timeOffset += duration;
+    }
+
+    logToConsole(`تم دمج تلاوة الآيات بنجاح! مدة الشورتس: ${timeOffset.toFixed(2)} ثانية ✓`);
+
+    parsedScenes = rawCues.map(cue => {
+        const verseFontSize = cue.text.length > 40 ? 68 : 78;
+        const verseFont = `700 ${verseFontSize}px ${QURAN_FONT}`;
+        // مركز Y = 960 (نص الشاشة بالظبط) — مفيش بطاقة تفسير تاخد مساحة تحت
+        const words = layoutArabicParagraph(cue.text, verseFont, 920, 20, verseFontSize * 1.5, 960);
+        return { ...cue, font: verseFont, fontSize: verseFontSize, words };
+    });
+}
 
 function drawGlobalBackground() {
     const grad = ctx.createLinearGradient(0, 0, 0, CONFIG.height);
@@ -176,20 +250,7 @@ function drawQuranVerseScene(scene, sceneProgress) {
     ctx.restore();
 }
 
-// --- الدالتين الإلزاميتين ---
-function buildParsedScenes() {
-    parsedScenes = RAW_CUES.map(cue => {
-        const verseFontSize = cue.text.length > 40 ? 68 : 78;
-        const verseFont = `700 ${verseFontSize}px ${QURAN_FONT}`;
-        // مركز Y = 960 (نص الشاشة بالظبط) — مفيش بطاقة تفسير تاخد مساحة تحت
-        const words = layoutArabicParagraph(cue.text, verseFont, 920, 20, verseFontSize * 1.5, 960);
-
-        return { ...cue, font: verseFont, fontSize: verseFontSize, words };
-    });
-}
-
-function drawSceneAtTime(time) {
-    state.currentTime = time;
+async function drawSceneAtTime(time) {
     drawGlobalBackground();
 
     if (parsedScenes.length === 0) return;
@@ -203,11 +264,10 @@ function drawSceneAtTime(time) {
 
 ## ملاحظات معروفة
 - **نفس دوال `drawGlobalBackground`/`drawSurahHeader`/`drawQuranVerseScene`
-  الموجودة في `brown-style.md` حرفيًا** — الفرق الوحيد إن `buildParsedScenes`
-  هنا بيحط مركز النص على `960` (نص الشاشة الفعلي) بدل `720`، ومفيش
-  `drawEnhancedTafseerPanel` ولا `tafseerWords` خالص. لو محتاج تحويل فيديو من
-  الهوية دي للهوية التانية (تفسير ↔ من غير تفسير)، الفرق محصور في النقطتين
-  دول بس.
+  الموجودة في `brown-style.md` حرفيًا** — الفرق الوحيد إن مركز النص هنا
+  `960` (نص الشاشة الفعلي) بدل `720`، ومفيش `drawEnhancedTafseerPanel` ولا
+  `tafseerWords` خالص. لو محتاج تحويل فيديو من الهوية دي للهوية التانية
+  (تفسير ↔ من غير تفسير)، الفرق محصور في النقطتين دول بس.
 - **لو مهمة طلبت "بنفس هوية Quran.md بس ضيف تفسير"**: أسهل حل عملي إنك تستخدم
   `brown-style.md` مباشرة بدل ما تضيف منطق تفسير هنا من الصفر — هي نفس اللوحة
   البصرية أصلًا ومعمول فيها بطاقة التفسير جاهزة ومختبرة.
