@@ -40,7 +40,7 @@ const RELEASE_TAG = `render-${process.env.GITHUB_RUN_NUMBER || Date.now()}`;
 // متاحين كـ $RELEASE_TAG و$GH_REPO جوه أي أمر run_terminal (bash child process)
 process.env.RELEASE_TAG = RELEASE_TAG;
 process.env.GH_REPO = GH_REPO;
-const MAX_TURNS = 200;
+const MAX_TURNS = 80;
 
 const TASK_COMPLETE_MARKER = 'TASK_COMPLETE.json';
 
@@ -48,8 +48,8 @@ const TASK_COMPLETE_MARKER = 'TASK_COMPLETE.json';
 // الأداة الوحيدة: تنفيذ أمر شل حقيقي
 // ---------------------------------------------------------------------------
 async function runTerminal({ command }) {
-  const OUTPUT_LIMIT = 90000; // كان 6000 — ده كان بيقطع ملفات كبيرة (scene.html أو ملفات هوية .md) بصمت
-  const ERROR_LIMIT = 90000;  // كان 3000 — نفس المشكلة لو الفشل نفسه فيه output كبير
+  const OUTPUT_LIMIT = 40000; // كان 6000 — ده كان بيقطع ملفات كبيرة (scene.html أو ملفات هوية .md) بصمت
+  const ERROR_LIMIT = 20000;  // كان 3000 — نفس المشكلة لو الفشل نفسه فيه output كبير
 
   function withTruncationNotice(text, limit) {
     if (text.length <= limit) return text;
@@ -198,11 +198,11 @@ run_terminal(command) — ده كل اللي عندك. مفيش أي أداة ت
 # معمارية تفكيرك — إلزامية
 1. **Plan-and-Solve**: أول رد منك في المهمة لازم يكون **نص عادي** (من غير أي استدعاء run_terminal)
    فيه خطتك الكاملة خطوة بخطوة. لو حاولت تستخدم run_terminal قبل كده هيترفض تلقائيًا.
-2. **التنفيذ**: نفّذ خطوة خطوة عن طريق run_terminal. ممنوع تمامًا تكتب أي نص قرآني أو تفسير
-   من ذاكرتك الداخلية — لازم يكون مصدره نتيجة curl فعلية في نفس الجلسة.
+2. **التنفيذ**: نفّذ خطوة خطوة عن طريق run_terminal. ممنوع تمامًا تكتب أي نص ديني/معلوماتي
+   (آية، حديث، تفسير) من ذاكرتك الداخلية — لازم يكون مصدره نتيجة curl فعلية في نفس الجلسة.
 3. **علامة انتهاء كل فيديو**: بعد ما ترفع فيديو وملف الوصف بتاعه بنجاح، اكتب ملف علامة بالأمر:
-   cat > video_<رقم السورة>_done.json << 'EOF'
-   {"surah": <رقم>, "release_video_url": "...", "release_md_url": "..."}
+   cat > video_<معرّف فريد>_done.json << 'EOF'
+   {"video_id": "...", "release_video_url": "...", "release_md_url": "..."}
    EOF
    **بعد ما تكتب ملف العلامة ده، إنت المسؤول بنفسك (من غير ما حد يطلب منك) عن كتابة
    رد نصي عادي (Reflexion) يقيّم اللي حصل قبل ما تكمل لأي فيديو تاني** — مفيش كود
