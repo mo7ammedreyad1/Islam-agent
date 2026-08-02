@@ -1,15 +1,19 @@
-# هوية "الرَّق الدافئ" (Warm Parchment) — تلاوة قرآنية + بطاقة تفسير
+# هوية "الرَّق الدافئ" (Warm Parchment) — مع بطاقة تفسير
 
 ## الوصف
 طابع كلاسيكي دافئ يحاكي ورق المصحف القديم: خلفية بيج/رملية فاتحة، نص القرآن
 بالبني الغامق (إسبريسو)، وخطوط ذهبية للفواصل والتفاصيل. المشهد فيه هيدر ثابت
 باسم السورة، الآية نفسها بحركة "ظهور متتابع" كلمة كلمة، وتحتها **بطاقة تفسير
-بيضاء** بحركة ظهور مماثلة.
+بيضاء** بحركة ظهور مماثلة. مناسبة لفيديوهات التلاوة + التفسير الميسّر معًا.
 
-- **شكل المحتوى**: آيات قرآنية + تفسير ميسّر لكل آية (الاتنين مطلوبين).
-- **الأصول**: صوت تلاوة آية بآية من `everyayah.com`. مفيش صورة ولا فيديو خارجي.
 - **الأبعاد**: 1080×1920 (Shorts عمودي، 9:16)، 60fps.
 - **حالة الاستخدام**: أي سورة عايز تعرضها بتلاوة + تفسير مبسّط في نفس الفيديو.
+- **شكل بيانات المحتوى** (`SURAH_NUMBER`, `RECITER_ID`, `RECITER_DISPLAY_NAME`,
+  `SURAH_DISPLAY_NAME`, `OUTPUT_FILENAME`, `SURAH_VERSES`): كل عنصر في
+  `SURAH_VERSES` لازم يحتوي `tafseer` (نص التفسير الميسّر للآية) بالإضافة لـ
+  `text` — من غيره بطاقة التفسير هتفضل فاضية لهذه الآية. الصوت بيتجاب من
+  `everyayah.com` آية بآية داخل `prepareIdentity()` بناءً على
+  `SURAH_NUMBER`/`RECITER_ID` وطول `SURAH_VERSES` (راجع الكود تحت).
 
 ## روابط الخطوط
 ```html
@@ -87,29 +91,43 @@ canvas {
 <canvas id="shortsCanvas" width="1080" height="1920"></canvas>
 ```
 
-## كود JS — الهوية بالكامل (محتوى + أصول + تصميم)
-انسخ الكتلة دي حرفيًا في مكان "🎨 كود ملف الهوية بالكامل" جوه `scene.html`.
+## كود JS — طبقة الهوية بالكامل (self-contained)
+انسخ الكتلة دي حرفيًا في "طبقة الهوية" جوه `scene.html` (راجع القسم 2 في
+`AGENTS.md`)، وبعدين استبدل قيم قسم "بيانات المحتوى" بس بالقيم الحقيقية للمهمة
+الحالية. الدالتين `prepareIdentity` و`drawSceneAtTime` في الآخر هما نقطة
+الاتصال بالطبقة التقنية الثابتة — لازم يتعرّفوا بنفس الاسمين.
 
 ```js
 // ================================================================
-// ⬛ منطقة قابلة للتعديل لكل فيديو جديد — غيّر هنا بس
+// 📋 بيانات المحتوى — بالقيم دي إنت (الوكيل) اللي بتكتبها/تعدّلها لكل
+// مهمة (نتيجة curl فعلية، راجع القسم 4 في AGENTS.md). القيم تحت مجرد
+// مثال (سورة الإخلاص) يوضح الشكل المطلوب بالظبط — الأسماء والبنية ثابتة
+// لهذه الهوية، القيم بس بتتغيّر.
 // ================================================================
-const SURAH_NUMBER = '112';                 // رقم السورة، 3 أرقام، مستخدم في رابط الصوت
-const RECITER_ID = 'Alafasy_128kbps';       // مجلد القارئ في everyayah.com
-const RECITER_DISPLAY_NAME = 'تلاوة الشيخ مشاري راشد العفاسي';
+const SURAH_NUMBER = '112';
+const RECITER_ID = 'Alafasy_128kbps';
+const RECITER_DISPLAY_NAME = 'الشيخ مشاري راشد العفاسي';
 const SURAH_DISPLAY_NAME = 'سُورَةُ الْإِخْلَاصِ';
-const OUTPUT_FILENAME = 'Quran_Shorts_Al_Ikhlas';
+const OUTPUT_FILENAME = 'Quran_Shorts_Al_Ikhlas_Tafseer';
 const SURAH_VERSES = [
-    // نص كل آية (text) وتفسيرها الميسّر (tafseer) — من نتيجة curl فعلية على
-    // api.alquran.cloud (editions=quran-uthmani,ar.muyassar)، مش من الذاكرة.
-    { text: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝١', tafseer: 'قل -أيها الرسول-: هو الله المتفرد بالألوهية.' },
-    { text: 'اللَّهُ الصَّمَدُ ۝٢', tafseer: 'الله الذي يصمد إليه الخلق في حوائجهم.' },
-    { text: 'لَمْ يَلِدْ وَلَمْ يُولَدْ ۝٣', tafseer: 'لم يلد ولدًا، ولم يكن له والد.' },
-    { text: 'وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ۝٤', tafseer: 'ولم يكن له مثيل أو نظير في ذاته وصفاته.' }
+    { text: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝', tafseer: 'قل -أيها الرسول- هو الله أحد لا نظير له ولا شريك.' },
+    { text: 'اللَّهُ الصَّمَدُ ۝', tafseer: 'الله الذي يصمد إليه الخلق في حوائجهم، الكامل في أوصافه.' },
+    { text: 'لَمْ يَلِدْ وَلَمْ يُولَدْ ۝', tafseer: 'لم يكن له ولد، ولم يكن مولودًا عن أحد.' },
+    { text: 'وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ۝', tafseer: 'ولم يكن له مثيل أو مكافئ في ذاته وصفاته سبحانه.' }
 ];
-// ================================================================
 
-let CONFIG = { fps: 60, width: 1080, height: 1920, duration: 35.0 };
+// ================================================================
+// ⚙️↔🎨 متغيرات العقد مع الطبقة التقنية — الأسماء دي ثابتة، الطبقة
+// التقنية بتقرأها بعد ما prepareIdentity() يخلص
+// ================================================================
+let CONFIG = { fps: 60, width: 1080, height: 1920, duration: 0 }; // duration بتتحدد فعليًا جوه prepareIdentity()
+let audioBuffer = null; // بيتملى جوه prepareIdentity()
+
+// ================================================================
+// 🎨 تصميم الهوية — ثوابت وأدوات رسم داخلية
+// ================================================================
+let parsedScenes = []; // حالة داخلية للهوية، بتتملى جوه prepareIdentity()
+
 const QURAN_FONT = "'Amiri', serif";
 const HEADER_FONT = "'Reem Kufi', sans-serif";
 
@@ -123,74 +141,6 @@ const PALETTE = {
     lineBorder: "rgba(192, 138, 62, 0.25)",
     goldGlow: "rgba(192, 138, 62, 0.12)"
 };
-
-let audioBuffer = null;   // بيتحدد جوه prepareIdentity()
-let parsedScenes = [];    // بيتحدد جوه prepareIdentity()
-
-// --- جلب الصوت آية بآية من everyayah.com، دمجه، وحساب توقيت كل آية من مدته الحقيقية ---
-async function fetchAyahAudio(ayahIndex) {
-    const ayahNum = String(ayahIndex).padStart(3, '0');
-    const url = `https://www.everyayah.com/data/${RECITER_ID}/${SURAH_NUMBER}${ayahNum}.mp3`;
-    const res = await fetch(url);
-    const arrayBuf = await res.arrayBuffer();
-    if (arrayBuf.byteLength < 5000) {
-        throw new Error(`حجم غير طبيعي (${arrayBuf.byteLength} بايت) للآية ${ayahIndex} — راجع الرابط`);
-    }
-    return arrayBuf;
-}
-
-async function prepareIdentity() {
-    logToConsole(`جاري تحميل صوت آيات ${SURAH_DISPLAY_NAME} آية بآية من EveryAyah.com (${RECITER_DISPLAY_NAME})...`);
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const ayahBuffers = [];
-    let totalSamples = 0;
-
-    for (let i = 1; i <= SURAH_VERSES.length; i++) {
-        const arrayBuf = await fetchAyahAudio(i);
-        const decodedBuf = await audioCtx.decodeAudioData(arrayBuf);
-        ayahBuffers.push(decodedBuf);
-        totalSamples += decodedBuf.length;
-        logToConsole(`تم تحميل الآية ${i} بنجاح ✓`);
-    }
-
-    if (ayahBuffers.length === 0) throw new Error("تعذر جلب ملفات الصوت من EveryAyah");
-
-    const sampleRate = ayahBuffers[0].sampleRate;
-    const channelsCount = ayahBuffers[0].numberOfChannels;
-    audioBuffer = audioCtx.createBuffer(channelsCount, totalSamples, sampleRate);
-
-    let sampleOffset = 0;
-    let timeOffset = 0.0;
-    const rawCues = [];
-
-    for (let i = 0; i < ayahBuffers.length; i++) {
-        const buf = ayahBuffers[i];
-        for (let ch = 0; ch < channelsCount; ch++) {
-            audioBuffer.getChannelData(ch).set(buf.getChannelData(ch), sampleOffset);
-        }
-        const duration = buf.duration;
-        rawCues.push({ id: i + 1, start: timeOffset, end: timeOffset + duration, ...SURAH_VERSES[i] });
-        sampleOffset += buf.length;
-        timeOffset += duration;
-    }
-
-    logToConsole(`تم دمج تلاوة الآيات بنجاح! مدة الشورتس: ${timeOffset.toFixed(2)} ثانية ✓`);
-
-    // بناء بيانات المشاهد الجاهزة للرسم (تخطيط النص محسوب مرة واحدة هنا)
-    parsedScenes = rawCues.map(cue => {
-        const verseFontSize = cue.text.length > 40 ? 68 : 78;
-        const verseFont = `700 ${verseFontSize}px ${QURAN_FONT}`;
-        const words = layoutArabicParagraph(cue.text, verseFont, 920, 20, verseFontSize * 1.5, 720);
-
-        const tafseerFontSize = 34;
-        const tafseerFont = `500 ${tafseerFontSize}px ${QURAN_FONT}`;
-        const tafseerWords = cue.tafseer
-            ? layoutArabicParagraph(cue.tafseer, tafseerFont, 820, 12, tafseerFontSize * 1.6, CONFIG.height - 340)
-            : null;
-
-        return { ...cue, font: verseFont, fontSize: verseFontSize, words, tafseerFont, tafseerWords };
-    });
-}
 
 function drawGlobalBackground() {
     const grad = ctx.createLinearGradient(0, 0, 0, CONFIG.height);
@@ -294,7 +244,7 @@ function drawEnhancedTafseerPanel(scene, sceneProgress) {
     ctx.font = `700 24px ${HEADER_FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText("﴿ التَّفْسِيرُ المُيَسَّرُ ﴾", CONFIG.width / 2, panelY + 50);
+    ctx.fillText("﴿ التَّفْسِيرُ المُمَيَّسَرُ ﴾", CONFIG.width / 2, panelY + 50);
 
     ctx.strokeStyle = PALETTE.lineBorder; ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -326,7 +276,49 @@ function drawEnhancedTafseerPanel(scene, sceneProgress) {
     ctx.restore();
 }
 
-async function drawSceneAtTime(time) {
+// ================================================================
+// 🎨 الدالتين الإلزاميتين في العقد
+// ================================================================
+async function prepareIdentity() {
+    logToConsole(`جاري تحميل صوت آيات ${SURAH_DISPLAY_NAME} آية بآية من EveryAyah.com (${RECITER_DISPLAY_NAME})...`);
+
+    const ayahBuffers = [];
+    for (let i = 1; i <= SURAH_VERSES.length; i++) {
+        const ayahNum = String(i).padStart(3, '0');
+        const url = `https://www.everyayah.com/data/${RECITER_ID}/${SURAH_NUMBER}${ayahNum}.mp3`;
+        try {
+            ayahBuffers.push(await fetchAndDecodeAudio(url));
+            logToConsole(`تم تحميل الآية ${i} بنجاح ✓`);
+        } catch (err) {
+            logToConsole(`تنبيه تحميل الآية ${i}: ${err.message}`, 'warn');
+        }
+    }
+    if (ayahBuffers.length === 0) throw new Error("تعذر جلب أي ملف صوت من EveryAyah");
+
+    const { buffer, segments } = concatenateAudioBuffers(ayahBuffers);
+    audioBuffer = buffer;
+    CONFIG.duration = audioBuffer.duration;
+
+    const cues = segments.map((seg, i) => ({ id: i + 1, ...seg, ...SURAH_VERSES[i] }));
+    parsedScenes = cues.map(cue => {
+        const verseFontSize = cue.text.length > 40 ? 68 : 78;
+        const verseFont = `700 ${verseFontSize}px ${QURAN_FONT}`;
+        const words = layoutArabicParagraph(cue.text, verseFont, 920, 20, verseFontSize * 1.5, 720);
+
+        const tafseerFontSize = 34;
+        const tafseerFont = `500 ${tafseerFontSize}px ${QURAN_FONT}`;
+        const tafseerWords = cue.tafseer
+            ? layoutArabicParagraph(cue.tafseer, tafseerFont, 820, 12, tafseerFontSize * 1.6, CONFIG.height - 340)
+            : null;
+
+        return { ...cue, font: verseFont, fontSize: verseFontSize, words, tafseerFont, tafseerWords };
+    });
+
+    logToConsole(`تم دمج تلاوة الآيات بنجاح! مدة الشورتس: ${CONFIG.duration.toFixed(2)} ثانية ✓`);
+}
+
+async function drawSceneAtTime(time) { // async دايمًا (راجع "عقد ملف هوية .md" بـ AGENTS.md)، حتى لو مفيش await فعلي هنا
+    state.currentTime = time;
     drawGlobalBackground();
 
     if (parsedScenes.length === 0) return;
@@ -342,12 +334,16 @@ async function drawSceneAtTime(time) {
 ## ملاحظات معروفة
 - **بطاقة التفسير بتعتمد على وجود `cue.tafseer`** — لو عنصر في `SURAH_VERSES`
   متبعتش ليه حقل `tafseer`، `tafseerWords` هيبقى `null` والبطاقة مش هتترسم
-  أصلًا لهذه الآية. لو المهمة عايزة تفسير، تأكد إن **كل** عنصر في
-  `SURAH_VERSES` معاه `tafseer`.
-- **مركز Y لنص الآية ثابت على `720`** جوه `prepareIdentity` (مش نص الشاشة
-  بالظبط) عشان يسيب مساحة كافية لبطاقة التفسير تحته — لو شيلت بطاقة التفسير
-  في مهمة معيّنة، فكّر تغيّر الرقم ده لمركز الشاشة (`CONFIG.height / 2`) عشان
-  الآية تبقى في المنتصف الفعلي من غير مساحة فاضية تحتها.
+  أصلًا لهذه الآية (`drawEnhancedTafseerPanel` بترجع فورًا لو `!scene.tafseerWords`).
+  لو المهمة عايزة تفسير، تأكد إن **كل** عنصر في `SURAH_VERSES` معاه `tafseer`.
 - **`drawSurahHeader` بتقبل `scene.surah || SURAH_DISPLAY_NAME`**: لو حبيت
   تكتب اسم السورة داخل كل عنصر في `SURAH_VERSES` (حقل `surah`) بدل الاعتماد
   على `SURAH_DISPLAY_NAME` الموحّد، الكود بيدعم الحالتين.
+- **مركز Y لنص الآية ثابت على `720`** جوه `prepareIdentity()` (مش نص الشاشة
+  بالظبط) عشان يسيب مساحة كافية لبطاقة التفسير تحته — لو شيلت بطاقة التفسير
+  في مهمة معيّنة، فكّر تغيّر الرقم ده لمركز الشاشة (`CONFIG.height / 2`) عشان
+  الآية تبقى في المنتصف الفعلي من غير مساحة فاضية تحتها.
+- **جلب الصوت وبناء بيانات المشاهد دلوقتي مدموجين في `prepareIdentity()` واحدة**
+  (بدل ما كانا مقسّمين بين تحميل تلقائي في الطبقة التقنية ودالة
+  `buildParsedScenes` منفصلة) — السلوك الفعلي (بما فيه التسامح مع فشل تحميل آية
+  واحدة بدون ما يوقف الباقي) لم يتغيّر.
