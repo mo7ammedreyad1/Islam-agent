@@ -5,26 +5,50 @@
 لباقي هويات المشروع في شكل الـ HUD/الأزرار) تحيط بفيديو **محتواه غامق ومظلم**
 — التباين ده مقصود في التصميم الأصلي ومش خطأ. المحتوى نفسه: خلفية إما صورة
 حقيقية بحركة تكبير بطيئة (تقنية Ken Burns) أو تدرج رمادي فاتح احتياطي، وفوقها
-**فينييت داكنة** بتخلي أي نص أبيض فوقها واضح مهما كانت الخلفية. هيدر ثابت
-باسم السورة والقارئ أعلى الشاشة بخط Reem Kufi، والآية نفسها في المنتصف بحركة
-**كتلة واحدة** (مش كلمة كلمة) fade + scale + إزاحة خفيفة لأعلى. دقة 720×1280
-(أصغر من باقي الهويات، بس نفس نسبة 9:16). مفيش بانل تفسير — تلاوة minimal بس.
+**فينييت داكنة** (تعتيم تدريجي من المنتصف للأطراف) بتخلي أي نص أبيض فوقها واضح
+مهما كانت الخلفية. هيدر ثابت باسم السورة والقارئ أعلى الشاشة بخط Reem Kufi،
+والآية نفسها في المنتصف بحركة **كتلة واحدة** (مش كلمة كلمة) fade + scale + إزاحة
+خفيفة لأعلى. دقة 720×1280 (أصغر من باقي الهويات، بس نفس نسبة 9:16). مفيش بانل
+تفسير — تلاوة minimal بس.
 
-- **شكل المحتوى**: آيات قرآنية بس، بدون تفسير.
-- **الأصول**: صوت تلاوة آية بآية من `everyayah.com` (إلزامي). صورة خلفية
-  اختيارية بحركة Ken Burns (معطّلة افتراضيًا).
+> **نشأة الهوية دي ونسختها**: اتبنت بمنطق "استيعاب هوية من ملف خارجي" (القسم
+> 1.5 في `AGENTS.md`) من ملف خارجي (`ai_studio_code_-_2026-07-27T072109_860.html`،
+> بعنوان داخلي "Ofoq Studio - Surah Al-Ikhlas Shorts 720p"). **هذا الملف هو
+> النسخة الثالثة** لهذه الهوية — استُخرج الستايل البصري الأصلي بمراجعة كل سطر
+> في الملف الأصلي وقيمة كل لون/رقم/دالة بالحرف (مش تقريب أو إعادة تخيّل)، ثم
+> أُعيد بناء منطق جلب الصوت والصورة وبيانات المحتوى بالكامل بما يتماشى مع
+> "عقد ملف هوية `.md`" ذي الطبقتين (self-contained، `prepareIdentity` +
+> `drawSceneAtTime` غير متزامنتين). الفروق عن أي نسخة أقدم من هذا الملف موثّقة
+> في "ملاحظات معروفة" آخر الصفحة.
+
+**فحص التوافق مع الرانر (القسم 1.5)** — الملف الأصلي فشل في 4 من 6 بنود:
+- ✅ يستخدم Mediabunny صح (`Output`/`CanvasSource`/`AudioBufferSource`).
+- ✅ الصورة الخلفية بتتحمّل بـ `img.crossOrigin = "anonymous"` بشكل صحيح تقنيًا.
+- ❌ صفر render hooks (`renderStatus`, `renderProgress`, `startVideoRender`,
+  `?autorender=true`, `video-render-complete`, `__renderFilename`/`__renderBase64`).
+- ❌ مفيش AAC encoder polyfill — هيفشل على الـ CI.
+- ❌ الصوت ملف واحد كامل من `quranicaudio.com`، مش آية بآية من `everyayah.com`.
+- ❌ توقيت الآيات (`RAW_CUES`) أرقام مكتوبة يدويًا بالتخمين، مش محسوبة من تقطيع
+  صوتي حقيقي (حتى لو `CONFIG.duration` الكلية كانت فعلًا بتتحسب من
+  `audioBuffer.duration` — التناقض ده بالظبط سبب رقم 5 في القسم 1.5: قرار
+  تنفيذي متسرّب جوه حاجة شكلها "بيانات مشهد").
+
+نتيجة الفحص لا تغيّر القرار (استخراج ستايل + منطق جلب أصول مبني من الصفر، زي
+أي ملف بيفشل بند واحد على الأقل) — لكنها بتوضح إن فصل التصميم عن التنفيذ هنا
+كان مباشر نسبيًا لأن الملف منظّم كويس أصلًا.
+
 - **الأبعاد**: 720×1280 (Shorts عمودي، 9:16، دقة أصغر من باقي الهويات)، 60fps.
 - **حالة الاستخدام**: تلاوة قصيرة/سورة صغيرة، طابع سينمائي هادئ بدل الرَّق الكلاسيكي.
-
-> **نشأة الهوية دي**: اتبنت بمنطق "استيعاب ستايل فقط" (القسم 1.5 في
-> `AGENTS.md`) من ملف خارجي (`ai_studio_code_-_2026-07-27T072109_860.html`،
-> بعنوان داخلي "Ofoq Studio - Surah Al-Ikhlas Shorts 720p") فشل في 4 من 6 بنود
-> فحص التوافق (صفر render hooks، مفيش AAC polyfill، صوت من `quranicaudio.com`
-> بدل `everyayah.com`، وتوقيت آيات مكتوب يدويًا). القيم اللي هنا (الألوان،
-> الخطوط، حركة Ken Burns) مطابقة للملف الأصلي بالحرف بعد مراجعة دقيقة —
-> راجع "ملاحظات معروفة" آخر الصفحة لتفاصيل الفروقات عن استخراج أول أقل دقة.
+- **شكل بيانات المحتوى** (`SURAH_NUMBER`, `RECITER_ID`, `RECITER_DISPLAY_NAME`,
+  `SURAH_DISPLAY_NAME`, `OUTPUT_FILENAME`, `SURAH_VERSES`): كل عنصر في
+  `SURAH_VERSES` فيه `text` بس، مفيش حاجة إضافية مطلوبة. الصوت بيتجاب من
+  `everyayah.com` آية بآية داخل `prepareIdentity()` بنفس باترن الهويات التانية
+  في المشروع (راجع الكود تحت).
 
 ## روابط الخطوط
+نفس رابط الخطوط الموجود في الملف الأصلي بالحرف (يشمل أوزان IBM Plex Sans Arabic
+الكاملة من 100 لـ800، حتى لو مش كلها مستخدمة فعليًا في الرسم، لأنها بتُستخدم في
+الـ HUD/الواجهة):
 ```html
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,8 +56,9 @@
 ```
 
 ## CSS كامل
-**ملاحظة**: الـ HUD والأزرار وسجل الأخطاء هنا **فاتحة/بيضاء** — مطابقة لباترن
-باقي هويات المشروع، مش داكنة زي محتوى الفيديو نفسه.
+**ملاحظة**: الـ HUD والأزرار وسجل الأخطاء هنا **فاتحة/بيضاء** (زجاجية شفافة على
+خلفية صفحة داكنة #0f0f11) — مطابقة لباترن باقي هويات المشروع، مش داكنة زي محتوى
+الفيديو نفسه. متلخبطش بين الاتنين.
 
 ```css
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -103,44 +128,50 @@ canvas {
 <canvas id="shortsCanvas" width="720" height="1280"></canvas>
 ```
 
-## كود JS — الهوية بالكامل (محتوى + أصول + تصميم)
-انسخ الكتلة دي حرفيًا في مكان "🎨 كود ملف الهوية بالكامل" جوه `scene.html`.
+## كود JS — طبقة الهوية بالكامل (self-contained)
+انسخ الكتلة دي حرفيًا في "طبقة الهوية" جوه `scene.html`، وبعدين استبدل قيم قسم
+"بيانات المحتوى" بس بالقيم الحقيقية للمهمة الحالية (نتيجة `curl` فعلية).
 
 ```js
 // ================================================================
-// ⬛ منطقة قابلة للتعديل لكل فيديو جديد — غيّر هنا بس
+// 📋 بيانات المحتوى — بالقيم دي إنت (الوكيل) اللي بتكتبها/تعدّلها لكل
+// مهمة (نتيجة curl فعلية، راجع القسم 4 في AGENTS.md). القيم تحت مجرد
+// مثال (سورة الإخلاص) يوضح الشكل المطلوب بالظبط — الأسماء والبنية ثابتة
+// لهذه الهوية، القيم بس بتتغيّر.
 // ================================================================
-const SURAH_NUMBER = '112';                 // رقم السورة، 3 أرقام، مستخدم في رابط الصوت
-const RECITER_ID = 'Alafasy_128kbps';       // مجلد القارئ في everyayah.com
-const RECITER_DISPLAY_NAME = 'تلاوة الشيخ مشاري راشد العفاسي';
+const SURAH_NUMBER = '112';
+const RECITER_ID = 'Alafasy_128kbps';
+const RECITER_DISPLAY_NAME = 'الشيخ مشاري راشد العفاسي';
 const SURAH_DISPLAY_NAME = 'سُورَةُ الْإِخْلَاصِ';
-const OUTPUT_FILENAME = 'Quran_Shorts_Al_Ikhlas_Ofoq';
+const OUTPUT_FILENAME = 'Ofoq_Night_Al_Ikhlas';
 const SURAH_VERSES = [
-    // نص كل آية (text) — من نتيجة curl فعلية على api.alquran.cloud
-    // (edition=quran-uthmani)، مش من الذاكرة.
-    { text: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝١' },
-    { text: 'اللَّهُ الصَّمَدُ ۝٢' },
-    { text: 'لَمْ يَلِدْ وَلَمْ يُولَدْ ۝٣' },
-    { text: 'وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ۝٤' }
+    { text: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝' },
+    { text: 'اللَّهُ الصَّمَدُ ۝' },
+    { text: 'لَمْ يَلِدْ وَلَمْ يُولَدْ ۝' },
+    { text: 'وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ۝' }
 ];
 
-// خلفية صورة اختيارية بحركة Ken Burns — افتراضيًا معطّلة (null) عشان الهوية
-// تشتغل من غير أي اعتماد على رابط خارجي غير مضمون الاستمرارية. لو عايز
-// تفعّلها لفيديو معيّن، حط رابط صورة CORS-safe هنا (تحقق بـ `curl -sI` إن فيه
-// header اسمه access-control-allow-origin قبل ما تستخدمه).
-const BACKGROUND_IMAGE_URL = null;
 // ================================================================
+// ⚙️↔🎨 متغيرات العقد مع الطبقة التقنية — الأسماء دي ثابتة، الطبقة
+// التقنية بتقرأها بعد ما prepareIdentity() يخلص
+// ================================================================
+let CONFIG = { fps: 60, width: 720, height: 1280, duration: 0 }; // duration بتتحدد فعليًا جوه prepareIdentity()
+let audioBuffer = null; // بيتملى جوه prepareIdentity()
 
-let CONFIG = { fps: 60, width: 720, height: 1280, duration: 22.0 };
+// ================================================================
+// 🎨 تصميم الهوية — ثوابت وأدوات رسم داخلية
+// ================================================================
+let parsedScenes = []; // حالة داخلية للهوية، بتتملى جوه prepareIdentity()
 
+// نفس سلسلة الخط الاحتياطية الموجودة في الملف الأصلي بالحرف (Georgia/Times كبديل لو Amiri اتأخر تحميله)
 const QURAN_FONT = "'Amiri', 'Georgia', 'Times New Roman', serif";
 const HEADER_FONT = "'Reem Kufi', sans-serif";
 
 const PALETTE = {
-    bgFallbackTop: "#FFFFFF",
+    bgFallbackTop: "#FFFFFF",           // خلفية احتياطية فاتحة (لو مفيش صورة أو لسه مبتحملتش)
     bgFallbackBottom: "#E5E5E5",
-    vignetteInner: "rgba(0, 0, 0, 0.20)",
-    vignetteOuter: "rgba(0, 0, 0, 0.75)",
+    vignetteInner: "rgba(0, 0, 0, 0.20)",  // فينييت: تعتيم خفيف في المنتصف
+    vignetteOuter: "rgba(0, 0, 0, 0.75)",  // فينييت: تعتيم قوي في الأطراف
     textPrimary: "#FFFFFF",
     textMuted: "rgba(255, 255, 255, 0.85)",
     dividerLine: "rgba(255, 255, 255, 0.3)",
@@ -148,88 +179,28 @@ const PALETTE = {
     shadowVerse: "rgba(0, 0, 0, 0.8)"
 };
 
+// --- خلفية صورة اختيارية بحركة Ken Burns (تكبير بطيء طول مدة الفيديو) ---
+// افتراضيًا متعطّلة (null) عشان الهوية تشتغل من غير أي اعتماد على رابط صورة
+// خارجي غير مضمون الاستمرارية. الرابط الأصلي في ملف "Ofoq Studio" كان:
+//   https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1920&auto=format&fit=crop
+// لو عايز تفعّل وضع الصورة لفيديو معيّن، حط رابط صورة CORS-safe هنا (لازم
+// تتأكد إنه بيرجّع header يسمح بالوصول من مصدر مختلف، وإلا الكانفاس هيتعتبر
+// "tainted" ويفشل التصدير — راجع قاعدة CORS في القسم 2 من AGENTS.md).
+const BACKGROUND_IMAGE_URL = null;
 const KEN_BURNS_START_ZOOM = 1.05;
 const KEN_BURNS_ZOOM_RANGE = 0.08; // الزووم بيوصل لـ 1.05 + 0.08 = 1.13 في آخر الفيديو
 
-let audioBuffer = null;   // بيتحدد جوه prepareIdentity()
-let parsedScenes = [];    // بيتحدد جوه prepareIdentity()
-let bgImage = null;       // بيتحدد جوه prepareIdentity() لو BACKGROUND_IMAGE_URL موجود
+let bgImage = null; // بيتملى (لو BACKGROUND_IMAGE_URL موجود) جوه prepareIdentity()، بانتظار فعلي
 
-async function fetchAyahAudio(ayahIndex) {
-    const ayahNum = String(ayahIndex).padStart(3, '0');
-    const url = `https://www.everyayah.com/data/${RECITER_ID}/${SURAH_NUMBER}${ayahNum}.mp3`;
-    const res = await fetch(url);
-    const arrayBuf = await res.arrayBuffer();
-    if (arrayBuf.byteLength < 5000) {
-        throw new Error(`حجم غير طبيعي (${arrayBuf.byteLength} بايت) للآية ${ayahIndex} — راجع الرابط`);
-    }
-    return arrayBuf;
-}
-
-// تحميل صورة الخلفية الاختيارية — async حقيقي (متفرّع عن prepareIdentity)،
-// فشلها لا يوقف تجهيز باقي الهوية (fallback تلقائي للتدرج اللوني)
-function loadOptionalBackgroundImage() {
-    if (!BACKGROUND_IMAGE_URL) return Promise.resolve();
-    return new Promise((resolve) => {
+// تحميل صورة واحدة، بانتظار حقيقي (Promise) — بديل نمط fire-and-forget القديم
+function loadImage(url) {
+    return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
-        img.onload = () => { bgImage = img; resolve(); };
-        img.onerror = () => {
-            logToConsole("تعذر تحميل صورة الخلفية، هيتم الاكتفاء بالتدرج اللوني.", "warn");
-            resolve();
-        };
-        img.src = BACKGROUND_IMAGE_URL;
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`تعذر تحميل الصورة: ${url}`));
+        img.src = url;
     });
-}
-
-async function prepareIdentity() {
-    logToConsole(`جاري تحميل صوت آيات ${SURAH_DISPLAY_NAME} آية بآية من EveryAyah.com (${RECITER_DISPLAY_NAME})...`);
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const ayahBuffers = [];
-    let totalSamples = 0;
-
-    // الصوت والصورة الاختيارية بيتحمّلوا بالتوازي — الصورة مش هتأخر التلاوة
-    const imageLoadPromise = loadOptionalBackgroundImage();
-
-    for (let i = 1; i <= SURAH_VERSES.length; i++) {
-        const arrayBuf = await fetchAyahAudio(i);
-        const decodedBuf = await audioCtx.decodeAudioData(arrayBuf);
-        ayahBuffers.push(decodedBuf);
-        totalSamples += decodedBuf.length;
-        logToConsole(`تم تحميل الآية ${i} بنجاح ✓`);
-    }
-
-    if (ayahBuffers.length === 0) throw new Error("تعذر جلب ملفات الصوت من EveryAyah");
-
-    const sampleRate = ayahBuffers[0].sampleRate;
-    const channelsCount = ayahBuffers[0].numberOfChannels;
-    audioBuffer = audioCtx.createBuffer(channelsCount, totalSamples, sampleRate);
-
-    let sampleOffset = 0;
-    let timeOffset = 0.0;
-    const rawCues = [];
-
-    for (let i = 0; i < ayahBuffers.length; i++) {
-        const buf = ayahBuffers[i];
-        for (let ch = 0; ch < channelsCount; ch++) {
-            audioBuffer.getChannelData(ch).set(buf.getChannelData(ch), sampleOffset);
-        }
-        const duration = buf.duration;
-        rawCues.push({ id: i + 1, start: timeOffset, end: timeOffset + duration, ...SURAH_VERSES[i] });
-        sampleOffset += buf.length;
-        timeOffset += duration;
-    }
-
-    logToConsole(`تم دمج تلاوة الآيات بنجاح! مدة الشورتس: ${timeOffset.toFixed(2)} ثانية ✓`);
-
-    parsedScenes = rawCues.map(cue => {
-        const fontSize = cue.text.length > 30 ? 52 : 60;
-        const font = `700 ${fontSize}px ${QURAN_FONT}`;
-        const words = layoutArabicParagraph(cue.text, font, 580, 14, fontSize * 1.5, CONFIG.height / 2);
-        return { ...cue, font, words };
-    });
-
-    await imageLoadPromise; // نتأكد إن الصورة (لو موجودة) خلصت قبل أول رسمة فعلية
 }
 
 // دالة "cover" عامة لرسم صورة تملأ مستطيل معيّن من غير تشويه نسبتها (زي CSS background-size:cover)
@@ -249,18 +220,21 @@ function drawMediaCover(el, dx, dy, dw, dh, radius = 0, zoom = 1) {
 }
 
 function drawGlobalBackground(time) {
+    // 1) خلفية احتياطية: تدرج رمادي فاتح (يظهر دايمًا كطبقة أولى، وبيتغطى بالصورة لو موجودة)
     const grad = ctx.createLinearGradient(0, 0, 0, CONFIG.height);
     grad.addColorStop(0, PALETTE.bgFallbackTop);
     grad.addColorStop(1, PALETTE.bgFallbackBottom);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, CONFIG.width, CONFIG.height);
 
+    // 2) خلفية صورة اختيارية بحركة Ken Burns (بس لو bgImage اتحمّلت فعلًا)
     if (bgImage) {
         const totalProgress = clamp01(time / CONFIG.duration);
         const zoom = KEN_BURNS_START_ZOOM + (totalProgress * KEN_BURNS_ZOOM_RANGE);
         drawMediaCover(bgImage, 0, 0, CONFIG.width, CONFIG.height, 0, zoom);
     }
 
+    // 3) فينييت داكنة فوق أي خلفية (صورة أو تدرج) — عشان النص الأبيض يفضل واضح دايمًا
     const vignette = ctx.createRadialGradient(
         CONFIG.width / 2, CONFIG.height / 2, CONFIG.width / 4,
         CONFIG.width / 2, CONFIG.height / 2, CONFIG.height / 1.5
@@ -303,10 +277,55 @@ function drawTopHeader(time) {
     ctx.restore();
 }
 
-async function drawSceneAtTime(time) {
+// ================================================================
+// 🎨 الدالتين الإلزاميتين في العقد
+// ================================================================
+async function prepareIdentity() {
+    if (BACKGROUND_IMAGE_URL) {
+        try {
+            bgImage = await loadImage(BACKGROUND_IMAGE_URL);
+        } catch (err) {
+            logToConsole("تعذر تحميل صورة الخلفية، هيتم الاكتفاء بالتدرج اللوني. " + err.message, "warn");
+        }
+    }
+
+    logToConsole(`جاري تحميل صوت آيات ${SURAH_DISPLAY_NAME} آية بآية من EveryAyah.com (${RECITER_DISPLAY_NAME})...`);
+
+    const ayahBuffers = [];
+    for (let i = 1; i <= SURAH_VERSES.length; i++) {
+        const ayahNum = String(i).padStart(3, '0');
+        const url = `https://www.everyayah.com/data/${RECITER_ID}/${SURAH_NUMBER}${ayahNum}.mp3`;
+        try {
+            ayahBuffers.push(await fetchAndDecodeAudio(url));
+            logToConsole(`تم تحميل الآية ${i} بنجاح ✓`);
+        } catch (err) {
+            logToConsole(`تنبيه تحميل الآية ${i}: ${err.message}`, 'warn');
+        }
+    }
+    if (ayahBuffers.length === 0) throw new Error("تعذر جلب أي ملف صوت من EveryAyah");
+
+    const { buffer, segments } = concatenateAudioBuffers(ayahBuffers);
+    audioBuffer = buffer;
+    CONFIG.duration = audioBuffer.duration;
+
+    const cues = segments.map((seg, i) => ({ id: i + 1, ...seg, ...SURAH_VERSES[i] }));
+    parsedScenes = cues.map(cue => {
+        const fontSize = cue.text.length > 30 ? 52 : 60;
+        const font = `700 ${fontSize}px ${QURAN_FONT}`;
+        const words = layoutArabicParagraph(cue.text, font, 580, 14, fontSize * 1.5, CONFIG.height / 2);
+        return { ...cue, font, words };
+    });
+
+    logToConsole(`تم دمج تلاوة الآيات بنجاح! مدة الشورتس: ${CONFIG.duration.toFixed(2)} ثانية ✓`);
+}
+
+async function drawSceneAtTime(time) { // async دايمًا (راجع "عقد ملف هوية .md" بـ AGENTS.md)، حتى لو مفيش await فعلي هنا
+    state.currentTime = time;
     drawGlobalBackground(time);
     drawTopHeader(time);
 
+    // fallback لآخر مشهد لو الوقت عدّى نهاية آخر آية بهامش صغير (تحسين بسيط
+    // عن الأصلي — راجع "ملاحظات معروفة")
     const activeScene = parsedScenes.find(s => time >= s.start && time < s.end)
         || parsedScenes[parsedScenes.length - 1];
     if (!activeScene) return;
@@ -357,25 +376,70 @@ async function drawSceneAtTime(time) {
 ```
 
 ## ملاحظات معروفة
-- **الألوان الحقيقية في الأصل مفيهاش أي "ذهبي" ولا خلفية كحلي داكنة خالص** —
-  الخلفية الاحتياطية فاتحة (`#FFFFFF → #E5E5E5`)، والغمقان السينمائي مصدره
-  **الفينييت السوداء فوقها بس**. لو شفت نسخة أقدم بألوان كحلي/ذهبي، دي كانت
-  استخراج أول أقل دقة، اتلغت.
-- **الصوت والصورة الاختيارية بيتحمّلوا بالتوازي** جوه `prepareIdentity`
-  (`loadOptionalBackgroundImage()` بتتنادى من غير `await` فوري، والنتيجة
-  بتتستنى في الآخر بس) — عشان الصورة (لو مفعّلة) ماتأخّرش تحميل التلاوة.
-- **مفيش بانل تفسير في الهوية دي أصلًا** — لو مهمة طلبت تفسير بهذا الستايل،
-  محتاج تضيف حقل `tafseer` لكل عنصر في `SURAH_VERSES` وترسمه بمنطق شبيه بلي
-  في `identities/brown-style.md`، بس بألوان تتماشى مع الخلفية الداكنة هنا.
-- **أبعاد الكانفاس 720×1280 مش 1080×1920** (نفس نسبة 9:16 بس دقة أقل) — لو
-  محتاج دقة أعلى، غيّر `CONFIG.width`/`CONFIG.height` في `<canvas>` وفي الـ JS
-  مع بعض، وراجع إن قيم `layoutArabicParagraph` جوه `prepareIdentity` اتناسبت
-  مع الأبعاد الجديدة.
-- **CSS الأصلي لـ`#console-modal` كان فيه `display: none;` و`display: flex;`
-  مكررين في نفس القاعدة** (باگ حقيقي في الملف الأصلي كان هيخلي نافذة السجل
-  ظاهرة افتراضيًا) — اتصحح هنا، سايب `display: none;` بس.
-- **عناصر اتستبعدت عمدًا من الملف الأصلي**: دالة `getWorkingCodecConfig()`
-  (فحص كودك مسبق — منطق تصدير صرف، مستبعد حسب قاعدة "الكود التنفيذي ما
-  بينتقلش")، `ensureFontsLoaded()` (انتظار تحميل الخطوط — غير ضروري عمليًا
-  لأن تحميل الصوت بياخد وقت كافي)، ومكتبة GSAP (كانت محمّلة في الأصل لكن
-  مفيهاش أي استخدام فعلي — كود ميت).
+
+**تصحيحات عن نسخة سابقة أبسط من هذا الملف** (لو كنت شفت نسخة "أفق الليلية" قبل
+كده بألوان كحلي/ذهبي — دي كانت استخراج أول أقل دقة، اتلغت واتستبدلت بالنسخة دي):
+- **الألوان الحقيقية في الأصل مفيهاش أي "ذهبي" (`#D4AF37`) ولا خلفية كحلي
+  داكنة خالص** — دي كانت إضافة من عندي في المحاولة الأولى. الخلفية الاحتياطية
+  الحقيقية في الملف الأصلي **فاتحة** (`#FFFFFF → #E5E5E5`)، والغمقان اللي
+  بيدّي طابع "سينمائي داكن" مصدره **الفينييت السوداء فوقها بس** (`rgba(0,0,0,0.20)`
+  في المنتصف لـ `rgba(0,0,0,0.75)` في الأطراف)، مش لون خلفية داكن مرسوم مباشرة.
+- **الـ HUD/الأزرار في الأصل فاتحة/بيضاء** (زجاج شفاف أبيض، نص أسود) — **مش
+  داكنة**. الغمقان في التصميم خاص بمحتوى الفيديو (الكانفاس) بس، مش بواجهة
+  التحكم المحيطة بيه.
+- زر التصدير أسود (`#111111`) مش ذهبي.
+
+**عناصر من الملف الأصلي استُبعدت عمدًا** (ومش هتلاقيها هنا):
+- **`getWorkingCodecConfig()`**: دالة كانت بتـ"تجرّب" كذا إعداد ترميز فيديو
+  فعليًا (تفتح `Output` تجريبي وتقفله) قبل التصدير الحقيقي، عشان تختار أنسب
+  كودك. دي منطق تصدير/تنفيذ صرف — مستبعدة بالكامل حسب قاعدة "المنطق التنفيذي
+  الخام ما بينتقلش أبدًا" في القسم 1.5. الطبقة التقنية الثابتة في `AGENTS.md`
+  بتحقق نفس الهدف (مرونة لو كودك مش مدعوم) بآلية تانية: قائمة محاولات مرتبة مع
+  `try/catch` على كل محاولة كاملة، مش فحص مسبق منفصل — نفس المتانة عمليًا.
+- **مصدر الصوت (`quranicaudio.com`, ملف واحد للسورة كاملة) وتوقيت `RAW_CUES`
+  اليدوي**: مستبعدين، وبدل منهم جلب صوت آية بآية من `everyayah.com` عن طريق
+  `fetchAndDecodeAudio`/`concatenateAudioBuffers` (نفس الباترن المتّبع في باقي
+  هويات المشروع الحالية) — التوقيت بقى محسوب فعليًا من مدة الصوت الحقيقي، مش
+  أرقام مكتوبة يدويًا (بندين 4 و5 في فحص التوافق فوق).
+- **`ensureFontsLoaded()`**: دالة كانت بتستنى `document.fonts.load(...)` قبل
+  أول رسم عشان تتجنب "فلاش" خط احتياطي في الفريم الأول. مستبعدة لتبسيط الواجهة
+  بين طبقة الهوية والطبقة التقنية (مفيش hook جاهز ليها في الطبقة التقنية
+  الثابتة حاليًا). عمليًا مش بتبقى مشكلة لأن تحميل الصوت من `everyayah.com` جوه
+  `prepareIdentity()` بياخد وقت كافي (بيلف على كل آية لوحدها) بحيث خطوط Google
+  Fonts بتكون خلصت تحميل قبل أول فريم فعلي بيتصدّر.
+- **GSAP** (`<script src=".../gsap.min.js">`): محمّلة في رأس الملف الأصلي لكن
+  **مش مستخدمة في أي مكان فعليًا** (صفر استدعاءات `gsap.`) — كود ميت، مش
+  منقولة هنا خالص.
+- **تعطيل الأزرار (`disabled`) لحد ما الأصول تتحمّل**: مرتبطة بهيكل HTML مخصّص
+  للملف الأصلي، وبيهيكل الـ `<body>` الثابت في القسم 2 من `AGENTS.md` مفيهوش
+  الخاصية دي على الأزرار من الأساس — مش هتتضاف هنا عشان الهيكل الثابت "ما
+  يتعدلش أبدًا".
+
+**تصحيح حقيقي في الملف الأصلي نفسه** (مش استبعاد، ده باگ فعلي بتصحيحه هنا):
+- CSS الأصلي لـ `#console-modal` فيه `display: none;` **و** `display: flex;`
+  مع بعض في نفس الـ rule (تكرار خاصية بقيمتين مختلفتين) — في CSS آخر قيمة
+  مكررة هي اللي بتكسب، يعني عمليًا الأصل كان هيخلي نافذة سجل الأخطاء **ظاهرة
+  بشكل افتراضي** فوق الفيديو من أول ما الصفحة تفتح، وده مش المقصود (زي ما
+  بيتضح من منطق زرار الفتح/الإغلاق نفسه). الكود هنا سايب `display: none;` بس،
+  زي باقي هويات المشروع.
+
+**ملاحظات تصميم إضافية**:
+- **الحركة هنا "كتلة واحدة" مش كلمة كلمة**: بعكس `brown-style.md`/`Quran.md`
+  اللي بيعملوا "ظهور متتابع" لكل كلمة لوحدها، هنا الآية كلها بتتحرك كوحدة واحدة
+  (fade + scale + إزاحة Y بسيطة) — لو غيّرت لهوية تانية وحسّيت الحركة "مختلفة
+  في الإحساس"، ده هو السبب بالظبط.
+- **وضع الصورة الاختيارية (`BACKGROUND_IMAGE_URL`) متعطّل افتراضيًا**: لو مهمة
+  طلبت الطابع الفوتوغرافي الأصلي بالظبط، فعّله برابط صورة حقيقي بيدعم CORS
+  (تأكد بـ `curl -sI` على الرابط إن فيه header اسمه `access-control-allow-origin`
+  قبل ما تستخدمه — لو مفيش، الكانفاس هيبقى "tainted" والتصدير هيفشل). التحميل
+  دلوقتي بـ `await loadImage(...)` جوه `prepareIdentity()` (مش fire-and-forget
+  زي نسخة أقدم من هذا الملف) — يعني لو الصورة موجودة، أول فريم بيترسم هيلاقيها
+  جاهزة فعليًا، مش هتظهر فجأة بعد أول كام فريم.
+- **مركز الآية على `CONFIG.height / 2` بالظبط** (نص الشاشة الحقيقي، بعكس
+  `brown-style.md` اللي بيزيح المركز لفوق عشان يسيب مكان لبطاقة تفسير) — مفيش
+  بطاقة تفسير هنا فمفيش داعي للإزاحة.
+- **جلب الصوت وبناء بيانات المشاهد دلوقتي مدموجين في `prepareIdentity()` واحدة**
+  مع تحميل الصورة الاختيارية، بدل ما كانوا الثلاثة متفرقين (تحميل تلقائي في
+  الطبقة التقنية، `buildParsedScenes` منفصلة، وتحميل صورة fire-and-forget خارج
+  أي دالة). السلوك الفعلي لجلب الصوت (بما فيه التسامح مع فشل تحميل آية واحدة
+  بدون ما يوقف الباقي) لم يتغيّر.
