@@ -1,4 +1,4 @@
-# هوية الـ Agent + العقد التقني الإلزامي لفيديوهات القرآن الكريم
+# هوية الـ Agent + العقد التقني الإلزامي لفيديوهات الشورتس الإسلامية
 
 هذا الملف هو كل اللي محتاجه الـ Agent قبل ما يبدأ أي مهمة. فيه هوية الـ Agent
 نفسه وطريقة تعامله العامة، وفيه أيضًا **العقد التقني الحرفي** اللي لازم يلتزم بيه
@@ -14,31 +14,34 @@
 > الكاملة والمُختبَرة موجودة في "دليل كتابة سكريبت الرندر" بالأسفل، انسخها زي
 > ما هي.
 
-> 📄 **ملف مرجعي مهم**: `docs/mediabunny-llms-full.txt` هو التوثيق الرسمي الكامل
-> لمكتبة Mediabunny (المحرك الوحيد المستخدم لتصدير الفيديو في المشروع ده). أي
-> كود يخص Mediabunny (بناء `Output`، الكودكس، الـ AAC encoder، قراءة فيديوهات
-> B-roll) **مصدره الوحيد هو الملف ده** — **افتحه واقرأه بالكامل** وقت الحاجة
-> (مش بحث جزئي بكلمة مفتاحية)، مش من الذاكرة ومش من نسخة قديمة متخيلة. تفاصيل
-> أكتر في القسم 2.
-
 ---
 
 ## القسم 1: هوية الـ Agent
 
-### هوية الفيديو — مستويين مختلفين تمامًا
-**1. الإحساس العام** (نوع الفيديو، طابعه العاطفي/الدعوي، بدون أي كود) موصوف في
-ملفات `.md` جوه [`video-identities/`](./video-identities/) — كل ملف بيوصف نوع
-فيديو معيّن بالكلام بس.
+الـ Agent مسؤول عن إنتاج فيديوهات شورتس بمحتوى إسلامي (تلاوة قرآنية مع أو من غير
+تفسير، حديث نبوي، أو أي محتوى ديني تاني حسب الهوية المستخدمة من `identities/`)
+بشكل كامل من الصفر: جلب النص والصوت (لو المحتوى محتاج صوت) من مصادر موثوقة،
+كتابة `scene.html` يلتزم بالعقد التقني في القسم 2، رندره، ثم رفعه على GitHub
+Release وتوثيقه.
 
-**2. الهوية الكاملة القابلة للتنفيذ** — ملف `.md` واحد **self-contained بالكامل**
-جوه [`identities/`](./identities/)، فيه كل حاجة الفيديو ده محتاجها: شكل المحتوى
-(نص آيات؟ حديث؟ صوت خارجي بس؟)، طريقة جلب أي أصول (صوت/صورة/فيديو B-roll)،
-والتصميم البصري (CSS + منطق الرسم على الـ canvas). **مفيش تقسيم فرعي جوه الملف
-ده لـ"طبقات" — هو وحدة واحدة متكاملة**، لأن شكل المحتوى وطريقة جلب الأصول
-بيختلفوا جذريًا من هوية للتانية (هوية ممكن تكون آيات + تفسير من غير نص، وهوية
-تانية حديث نبوي مالوش أي علاقة بالقرآن، وهوية تالتة صوت بس من غير نص خالص،
-ورابعة محتاجة فيديو B-roll وخامسة مش محتاجة أي أصل خارجي أصلًا) — فمحاولة فرض
-شكل موحّد عليهم كانت بتقيّد الهويات الجديدة من غير أي داعي حقيقي.
+### هوية الفيديو — قسمين منفصلين
+
+**1. الإحساس والمحتوى العام** (نوع الفيديو، طابعه العام، هل فيه تفسير/شرح إضافي
+ولا لأ) موصوف بالكلام في ملفات `.md` جوه [`video-identities/`](./video-identities/)
+— كل ملف يوصف نوع فيديو معيّن، ده مستوى مختلف تمامًا عن بنية الكود.
+
+**2. كل حاجة تانية — self-contained بالكامل** موصوفة في ملفات `.md` جوه
+[`identities/`](./identities/): الشكل البصري والتقني (الخطوط، الألوان، التخطيط،
+منطق الرسم على الـ canvas)، **شكل بيانات المحتوى اللي الهوية دي بتحتاجه** (مش
+مفروض عليها شكل موحّد — هوية ممكن تكون آية قرآنية بتفسير، وهوية تانية حديث نبوي
+مالوش أي علاقة بالقرآن، وهوية تالتة صوت بس من غير أي نص خالص)، **ومنطق جلب أي
+أصول خاصة بيها** (صوت، صورة، فيديو B-roll، أو ولا حاجة خالص لو مش محتاجة).
+**مواصفة تفصيلية قابلة للنسخ الحرفي** (فيها كود JS/CSS فعلي، مش وصف كلامي عام)،
+لكن **بدون أي جزء من render hooks أو محرك التصدير (Mediabunny) نفسه**، لأن ده كله
+ثابت وموجود مرة واحدة بس في "الطبقة التقنية الثابتة" بالقسم 2 ومالوش أي علاقة
+بمحتوى ديني أو قرآني تحديدًا. **المجلد ده فيه — وهيفضل يتزود فيه مع الوقت — أكتر
+من هوية مختلفة تمامًا (مش بس بصريًا، كمان في شكل المحتوى اللي بتحتاجه).** مفيش
+هوية "افتراضية" أو "أساسية" بينهم — كل ملف فيه مرجع حرفي مستقل بذاته.
 
 - **اسم ملف الهوية المطلوب يُحدَّد صراحة في وصف المهمة نفسها** (مثلًا: "اعمل
   فيديو بناءً على هوية `identities/<اسم-الملف>.md`"). افتح الملف المذكور
@@ -47,33 +50,55 @@
   التانية دي ارجع للمستخدم واسأله أي ملف يستخدم.
 - ملفات `video-identities/*.md` وصف بالكلام — التزم بروحه، مش نسخ حرفي.
 
-### `scene.html` = ملف الهوية + ملحق تقني ثابت صغير جدًا
-راجع "القسم 2" قبل أول مهمة تعملها. عمليًا `scene.html` بيتبني من حاجتين بس:
+### `scene.html` بيتبني، مش بينُسخ — 3 خطوات بالترتيب
+راجع "نظرة عامة: كل `scene.html` = طبقتين مدموجتين" في القسم 2 قبل أول مهمة تعملها. عمليًا:
 
-1. **كود ملف الهوية بالكامل** (`identities/<اسم>.md`) — **يُنسخ حرفيًا**، مش
-   بيتعاد صياغته أو "تحسينه". فيه محتوى المهمة (تعدّله لكل فيديو)، جلب أي أصول
-   الهوية دي محتاجاها، ومنطق الرسم.
-2. **ملحق تقني ثابت صغير جدًا** (~30-40 سطر: عقد الـ render hooks + هيكل الـ
-   DOM الأساسي + جسر الـ base64) — **موجود كامل في القسم 2، يُنسخ حرفيًا من
-   غير أي تعديل** — بالإضافة لكود تصدير Mediabunny **تكتبه إنت بالاستعانة
-   الكاملة بـ `docs/mediabunny-llms-full.txt`** (مش نسخة ثابتة محفوظة هنا؛
-   التفاصيل والسبب في القسم 2).
+1. **افهم طلب المستخدم** وحوّله لبنود واضحة (نوع المحتوى، مع/من غير تفسير أو شرح
+   إضافي، أي تخصيص شكلي مطلوب صراحة...) — وحدد أي ملف هوية في `identities/`
+   مطلوب استخدامه.
+2. **اقرأ ملف الهوية المطلوب بالكامل** — مش قراءة سريعة، اقرأه أكتر من مرة لو
+   محتاج (مرة عامة تفهم بيها البنية، ومرة تانية مركّزة على أي نقطة طلبها
+   المستخدم صراحة تخالف الافتراضي). لاحظ خصوصًا: أبعاد الكانفاس، **شكل بيانات
+   المحتوى المطلوب توفيره** (الحقول اللي وثّقتها الهوية في فقرة الوصف — زي
+   `SURAH_VERSES`/`tafseer` للهويات القرآنية الحالية، أو أي شكل تاني)، والدالتين
+   الإلزاميتين (`prepareIdentity`, `drawSceneAtTime`).
+3. **اكتب `scene.html` من الصفر** بدمج الطبقتين بالترتيب في القسم 2: كود الهوية
+   بالكامل (**منسوخ حرفيًا** من ملف الـ `.md`، مش معاد صياغته أو "تحسينه" — إلا
+   قيم بيانات المحتوى بس، اللي بتستبدلها بالقيم الحقيقية للمهمة الحالية نتيجة
+   `curl` فعلية، راجع القسم 4)، ثم الطبقة التقنية الثابتة (**منسوخة حرفيًا** من
+   القسم 2، بدون أي تعديل).
 
-**فرّق بين حاجتين طول الوقت:**
-- **الملحق التقني الثابت + عقد الـ hooks**: مايتفاوضش فيه أبدًا. أي مخالفة ليه
-  = فشل الأتمتة (حتى لو الفيديو نفسه اتصدّر صح).
-- **كل حاجة تانية في ملف الهوية** (المحتوى، الأصول، التصميم): بتتغيّر بحرية
-  حسب المهمة والهوية المختارة.
+**فرّق بين حاجتين واضح طول الوقت:**
+- **العقد التقني الإلزامي — مايتفاوضش فيه أبدًا، أيًا كانت الهوية**: كل حاجة في
+  "الطبقة التقنية الثابتة" بالقسم 2 (Mediabunny، الـ render hooks، أدوات الجلب
+  العامة، التصدير). أي مخالفة ليه = فشل الرندر.
+- **تفاصيل الهوية البصرية نفسها** (الألوان، الخطوط، تفاصيل التخطيط، الحركات،
+  وجود تفسير من عدمه...): دي جزء من "الستايل"، ومسموح تعدّل فيها **بناءً على
+  طلب صريح من المستخدم في المهمة** (مثلًا "بنفس هوية X بس خلي الخلفية أغمق
+  شوية"). الهدف إنك تكون مرن مع طلب المستخدم فوق أساس الهوية، مش إنك تنسخها
+  100% حرفيًا في كل تفصيلة صغيرة من غير أي وعي بالسياق، ومش إنك تغيّر فيها من
+  عندك من غير ما المستخدم يطلب.
+- **قيم بيانات المحتوى لكل فيديو** (نص الآيات، التفسير لو موجود، اسم السورة،
+  القارئ، رقم السورة في رابط الصوت، اسم ملف الإخراج، أو أي حقول تانية حسب شكل
+  محتوى الهوية المستخدمة): **شكلها/أسماء حقولها** معرّفة جوه ملف الهوية نفسها
+  (البندين 1 و5 في "عقد ملف هوية `.md`" بالقسم 2)، لكن **قيمها الفعلية** دايمًا
+  بتكتبها من الصفر لكل مهمة (بتستبدل بيها قيم المثال الموجودة في ملف الـ `.md`)
+  — مفيش قيمة محتوى حقيقية "بتتنسخ" من ملف الهوية أبدًا، ده مش جزء من "الستايل"
+  اللي بيتنسخ حرفيًا.
+- **قبل ما تبدأ، شوف كمان لو فيه قسم "ملاحظات معروفة" جوه ملف الهوية نفسه
+  (آخره عادةً)** — لو موجود، فيه ملاحظات وتنبيهات خاصة بالتصميم/المحتوى ده
+  بالذات، مش عامة لكل الهويات.
 
 ### تحقق إلزامي بعد كتابة `scene.html`، قبل ما تكمّل للرندر
-- **اطبع القيم الفعلية لمنطقة تعديل المحتوى** (`grep`/`cat` على `scene.html`
-  نفسه، مش من الكود اللي كتبته في رأسك) وقارنها بالمطلوب فعليًا في المهمة —
-  أسماء المتغيرات هنا بتختلف من هوية لهوية (مفيش أسماء موحّدة مفروضة)، فدوّر
-  على "منطقة تعديل المحتوى" جوه الهوية نفسها.
-- **تأكد إن الدالتين الإلزاميتين (`prepareIdentity`, `drawSceneAtTime`) وثابت
-  `CONFIG`/`OUTPUT_FILENAME` موجودين فعليًا في `scene.html`**
-  (`grep -n "function prepareIdentity\|function drawSceneAtTime\|const CONFIG\|OUTPUT_FILENAME" scene.html`)
-  — نسيان نسخهم من ملف الهوية بيدّي خطأ `is not defined` وقت التشغيل.
+- **اطبع القيم الفعلية لمتغيرات بيانات المحتوى اللي عرّفتها الهوية المستخدمة
+  بالذات** (زي `SURAH_NUMBER`, `RECITER_ID`, `SURAH_DISPLAY_NAME`,
+  `RECITER_DISPLAY_NAME` للهويات القرآنية الحالية، أو أي أسماء تانية لو الهوية
+  شكلها مختلف) **من الملف الناتج فعليًا** (`grep`/`cat` على `scene.html` نفسه،
+  مش من الكود اللي كتبته في رأسك) وقارنها بالمحتوى المطلوب فعليًا في المهمة.
+- **تأكد إن الدالتين الإلزاميتين (`prepareIdentity`, `drawSceneAtTime`)
+  موجودتين فعليًا في `scene.html`** (`grep -n "function prepareIdentity\|function drawSceneAtTime" scene.html`)
+  — نسيان نسخهم من ملف الهوية بيدّي خطأ `is not defined` وقت التشغيل، مش فشل
+  صامت، فهيظهر واضح في `console_logs`.
 - **فحص إلزامي لصحة `scene.html` قبل تشغيل سكريبت الرندر الكامل** (مش بعده):
   افتح الصفحة headless لكام ثانية بس (من غير `?autorender=true`) والتقط أي
   `pageerror`، زي كده:
@@ -104,7 +129,8 @@
   })();
   ```
   لو طبع `SYNTAX_ERROR`، **متكملش على سكريبت الرندر الكامل خالص** — رجع اصلح
-  `scene.html` الأول.
+  `scene.html` الأول. الهدف إنك تكتشف أخطاء الـ syntax في ثواني بدل ما تكتشفها
+  بعد `TimeoutError` غامض بعد دقايق من انتظار الرندر الكامل.
 
 ---
 
@@ -112,96 +138,232 @@
 
 أحيانًا هتوصلك مهمة مرفق معاها ملف `.html` (من المستخدم، أو ناتج من أداة تصميم
 تانية، أو من محادثة سابقة) بيوصف "عايز فيديو شكله كده" — **من غير أي ضمان إنه
-مكتوب أصلًا لهذا الرانر**. **الخطوة دي إلزامية قبل ما تستخدم أي ملف من النوع ده
-بأي شكل — سواء كمرجع مباشر أو كإلهام بصري.**
+مكتوب أصلًا لهذا الرانر**. الملف ده ممكن يكون فيه هوية بصرية جميلة وموحية، لكن
+لو اتعامل معاه زي أي ملف في `identities/` (نسخ حرفي كامل)، ده بيجيب فشل رندر
+مضمون تقريبًا، لأن أغلب الملفات من النوع ده اتكتبت أصلًا كـ "معاينة/تصدير يدوي
+في المتصفح" مش كـ "أوتوميشن رانر". **الخطوة دي إلزامية قبل ما تستخدم أي ملف من
+النوع ده بأي شكل — سواء كمرجع مباشر أو كإلهام بصري.**
 
 ### الخطوة 1: فحص تصنيف صريح — طبّقه بند بند، مش انطباع عام
 افتح الملف وابحث فعليًا (مش تخمين من شكله العام) عن كل بند من دول:
 
-1. **الـ render hooks كاملة وشغّالة فعليًا**: `window.renderStatus` بكل قيمه،
-   `window.renderProgress`، دالة اسمها بالظبط `window.startVideoRender()`،
-   دعم `?autorender=true`، حدث `video-render-complete` بيتطلق فعليًا، وجود
-   `window.__renderFilename` و `window.__renderBase64`.
-2. **محرك الفيديو Mediabunny حصرًا** — مش `ffmpeg`، مش `MediaRecorder`/
-   `canvas.captureStream`، مش أي مكتبة تانية.
+1. **الـ render hooks كاملة وشغّالة فعليًا**: `window.renderStatus` بكل قيمه
+   (`loading`/`ready`/`rendering`/`completed`/`error`)، `window.renderProgress`،
+   دالة اسمها بالظبط `window.startVideoRender()`، دعم `?autorender=true` بيستدعيها
+   لوحدها، حدث `video-render-complete` بيتطلق فعليًا، وجود
+   `window.__renderFilename` و `window.__renderBase64` (الجسر لسكريبت الـ
+   Playwright). غياب **أي واحد** منهم = فشل الفحص.
+2. **محرك الفيديو Mediabunny حصرًا** (`Output`/`CanvasSource`/`AudioBufferSource`
+   من `'mediabunny'`) — مش `ffmpeg`، مش `MediaRecorder`/`canvas.captureStream`،
+   مش أي مكتبة تانية.
 3. **polyfill الـ AAC encoder** موجود فعليًا (`registerAacEncoder` +
-   `canEncodeAudio('aac')`) — من غيره التصدير هيفشل على الـ CI runner.
-4. **أي أصل صوتي/بصري خارجي يتجاب بـ `fetch()` وقت التشغيل**، مش تحميل يدوي
-   مسبق ومسار محلي مُشار له.
-5. **التوقيت محسوب من الأصل الحقيقي**: أوقات المشاهد طالعة فعليًا من مدة
-   الصوت الحقيقية (`AudioBuffer.duration`) بعد فك التشفير — مش أرقام ثواني
-   مكتوبة يدويًا بالتخمين.
+   `canEncodeAudio('aac')`) — من غيره التصدير هيفشل على الـ CI runner حتى لو
+   شغال على جهاز المستخدم اللي عنده encoder أصلي.
+4. **مصدر الصوت (لو الهوية فيها صوت)**: بيتحمّل بـ `fetch()` مباشر وقت التشغيل
+   من رابط `https://` حقيقي (مش تحميل مسبق محلي، ومش قيمة placeholder) — **لا
+   يوجد قيد على مصدر الصوت بالتحديد ولا على تقطيعه (آية بآية أو ملف واحد)**، ده
+   قرار الهوية نفسها بالكامل، بس لازم يستخدم الأدوات العامة
+   (`fetchAndDecodeAudio`/`concatenateAudioBuffers`) مش إعادة اختراعها من الصفر.
+5. **التوقيت محسوب من الصوت الحقيقي (لو فيه صوت)**: أوقات بداية/نهاية أي مقطع
+   مرتبط بالصوت طالعة فعليًا من مدة `AudioBuffer` حقيقية بعد فكّه (زي اللي
+   `concatenateAudioBuffers` بترجّعه في `segments`)، وليس أرقام ثواني مكتوبة
+   يدويًا بالتخمين.
 6. **الخلفية/الصور**: إما مرسومة بالكانفاس بالكامل، أو متجابة بـ
-   `crossOrigin="anonymous"` من مصدر بيدعم CORS فعليًا.
+   `crossOrigin="anonymous"` من مصدر بيدعم CORS فعليًا (أو فريم فيديو B-roll
+   متجاب بأداة `createBrollFrameSampler` العامة) — مش صورة من رابط عشوائي
+   (زي Unsplash أو أي CDN عام) من غير تحقق.
 
-### الخطوة 2: الناتج دايمًا ملف هوية `.md` جديد self-contained — الفحص بيحدد مستوى الثقة بس
-**الملف الخارجي — عدّى الفحص ولا لأ — ملهوش أي سيناريو تستخدم فيه منطقه
-التنفيذي (render/hooks/جلب أصول/تصدير) حرفيًا أبدًا.** الفحص فوق بيحدد **مدى
-الثقة في الفصل بين تصميمه وتنفيذه** وقت الاستخراج:
+### الخطوة 2: الناتج دايمًا ملف هوية `.md` جديد — الفحص بيحدد مستوى الثقة بس
+بما إن `scene.html` بقى بيتبني من طبقة تقنية ثابتة عامة تمامًا (موجودة مرة واحدة
+بس في القسم 2، مش منسوخة من كل ملف هوية) بتتكفل بس بـ render hooks/محرك التصدير
+(Mediabunny)/الـ AAC polyfill، فـ **الملف الخارجي — عدّى الفحص ولا لأ — ملهوش أي
+سيناريو تستخدم فيه منطقه التنفيذي الخام ده (render/hooks/تصدير) حرفيًا أبدًا**.
+الفحص فوق مش بيحدد "استخدمه كامل ولا استخرج منه بس"، هو بيحدد **مدى الثقة في
+الفصل بين تصميمه/محتواه من ناحية، وتنفيذه الخام من ناحية تانية** وقت الاستخراج:
 
-- **عدّى بكل البنود الستة** → غالبًا الملف مبني أصلًا بفصل واضح بين الرسم
-  والتنفيذ، فاستخراج كود التصميم/المحتوى/جلب الأصول منه غالبًا مباشر.
-- **فشل في بند واحد أو أكتر (الحالة الشائعة)** → خد وقتك أكتر في الفصل،
-  متفترضش إن أي دالة "شكلها رسم" خالية من قرارات تنفيذية متسرّبة جواها (زي
-  أرقام توقيت ثابتة، أو رابط مصدر مكتوب داخل دالة الرسم نفسها).
-- **في الحالتين**: يُستخرج **كل حاجة تخص الهوية** (المحتوى، طريقة جلب الأصول،
-  التصميم) ويُبنى منها ملف **`identities/<اسم-جديد>.md` جديد self-contained
-  ومستقل**، بصيغة "عقد ملف هوية .md" في القسم 2 — **بدون أي جزء من منطق
-  render/hooks/تصدير**، لأن دي بتيجي من الملحق التقني الثابت + توثيق
-  Mediabunny بس، مهما كان الملف الأصلي شايلها أو لأ.
-  - لا تعديل مباشر على الملف الخارجي غير الموثوق، ولا استبدال لملف قائم.
+- **عدّى بكل البنود الستة** → غالبًا الملف مبني أصلًا بفصل واضح بين الرسم/جلب
+  الأصول من ناحية والتنفيذ الخام من ناحية تانية، فاستخراج كود التصميم وجلب
+  الأصول منه (دوال الرسم، الألوان، الخطوط، التخطيط، ومنطق جلب أي صوت/صورة لو
+  موجود) غالبًا مباشر وواضح الحدود.
+- **فشل في بند واحد أو أكتر (الحالة الشائعة مع ملفات خارجية)** → المنطق
+  التنفيذي الخام ومنطق التصميم/جلب الأصول غالبًا متداخلين في نفس الدوال (مثال
+  شائع: دالة رسم بتاخد توقيت مكتوب يدويًا بدل ما تستقبله من بيانات مشاهد
+  محسوبة فعليًا) — خد وقتك أكتر في الفصل، ومتفترضش إن أي دالة "شكلها رسم" خالية
+  من قرارات تنفيذية متسرّبة جواها (زي أرقام توقيت ثابتة، أو منطق ترميز/تصدير
+  مكتوب داخل دالة الرسم نفسها).
+- **في الحالتين**: يُستخرج الستايل البصري **ومنطق جلب الأصول الخاص بالهوية دي**
+  (لو الملف الأصلي فيه أصلًا، أو تبنيه إنت من الصفر بناءً على الأدوات العامة
+  الجديدة في الطبقة التقنية زي `fetchAndDecodeAudio`)، **وشكل بيانات المحتوى
+  اللي الهوية دي بتحتاجه**، معًا — يتوثّق بوضوح لنفسك قبل ما تكتب كود إيه
+  بالظبط المأخوذ: أسماء الخطوط وأوزانها، لوحة الألوان، أبعاد الكانفاس ونسبته،
+  خوارزمية توزيع النص لو مختلفة عن `layoutArabicParagraph` العامة الموجودة في
+  الطبقة التقنية، فكرة الحركة، شكل عناصر الواجهة لو له طابع مميز، وحقول بيانات
+  المحتوى المطلوبة — ويُبنى منه ملف **`identities/<اسم-جديد>.md` جديد ومستقل،
+  self-contained بالكامل**، بنفس الصيغة الموصوفة في "عقد ملف هوية `.md`"
+  بالقسم 2 — **بدون أي جزء من render hooks/محرك التصدير (Mediabunny
+  Output)/الـ AAC polyfill**، لأن دي بس اللي بتيجي من الطبقة التقنية الثابتة
+  في القسم 2 بس، مهما كان الملف الأصلي شايلها أو لأ.
+  - لا تعديل مباشر على الملف الخارجي غير الموثوق، ولا استبدال لملف قائم في
+    `identities/`.
   - لو المهمة بس عايزة فيديو واحد بالستايل ده (من غير إضافة دائمة للمجلد)،
-    اكتب كود الهوية المستخرج مباشرة جوه `scene.html` من غير ما تضيف ملف هوية
-    جديد، إلا لو المستخدم طلب صراحة إضافته كهوية دائمة.
-- **حالة غير واضحة** → افتراضيًا خد وقتك في الفصل (الخيار الأكثر حذرًا)، مش
+    اكتب كود الهوية المستخرج (تصميم + جلب أصول + بيانات محتوى) مباشرة في طبقة
+    الهوية جوه `scene.html` (الخطوة 3 في "منهجية بناء `scene.html`" بالقسم 1)
+    من غير ما تضيف ملف هوية جديد، إلا لو المستخدم طلب صراحة إضافته كهوية دائمة.
+- **حالة غير واضحة (بعض البنود مش أكيدة)** → افتراضيًا عامل الاستخراج كأنه فشل
+  الفحص (الخيار الأكثر حذرًا في الفصل بين التصميم/المحتوى والتنفيذ الخام)، مش
   تفترض ثقة أعلى مما تستحق.
-
-**لتنفيذ الخطوة دي بشكل احترافي وموثّق، فيه Skill جاهزة** (`skill.md` في جذر
-هذا الريبو، أو أي نسخة منه اتديت لأجينت تاني) بتعمل بالظبط الاستخراج ده —
-راجعها لو متاحة قبل ما تعمل الاستخراج يدويًا من الصفر.
 
 ---
 
-## القسم 2: العقد التقني — ملحق ثابت صغير + الاعتماد المباشر على توثيق Mediabunny
+## القسم 2: العقد التقني الإلزامي — **مهم جدًا، مخالفته = فشل الرندر بالكامل**
 
-### لماذا الشكل ده بالذات
-كل حاجة تخص Mediabunny (بناء `Output`، الكودكس، الـ AAC encoder، قراءة فيديو
-B-roll) **موثّقة رسميًا وبتفصيل ممتاز في `docs/mediabunny-llms-full.txt`**،
-ومحافظة على نسخة مكررة منها هنا معناها مصدرين للحقيقة ممكن يتعارضوا مع الوقت
-(خصوصًا مع تحديثات المكتبة). فبدل كده: **الملف الوحيد اللي بيتغيّر من مهمة
-لمهمة هو ملف الهوية نفسه، والملحق التقني هنا أصغر ما يمكن** (بس الحاجتين اللي
-هما اختراعنا احنا ومش هتلاقيهم في أي توثيق خارجي: عقد الـ hooks وجسر الـ
-base64)، وكل حاجة Mediabunny بتتكتب بالاستعانة المباشرة بالتوثيق وقت الحاجة.
+### نظرة عامة: كل `scene.html` = طبقتين مدموجتين جوه `<script type="module">` واحد
+من دلوقتي، `scene.html` **مش بيتنسخ من ملف واحد جاهز** — إنت (الـ Agent) بتجمّعه
+بنفسك من طبقتين مصدرهم مختلف، بالترتيب ده بالظبط:
 
-### 📄 قاعدة القراءة: بالكامل، مش بحث جزئي
-لما تحتاج أي حاجة من Mediabunny (تصدير، كودك، AAC، B-roll)، **افتح
-`docs/mediabunny-llms-full.txt` واقرأه بالكامل** (أو على الأقل الأقسام
-المتعلقة بالكامل من أولها لآخرها) — مش `grep` على كلمة مفتاحية واحدة وبناء
-افتراضات من سطرين مقطوعين من سياقهم. الملف منظّم بعناوين واضحة (`Media
-sources`, `Media sinks`, `Writing media files`, `Converting media files`,
-تسجيلات الكودكس المختلفة...) — استخدمها للتنقل، لكن اقرأ القسم اللي هتستخدمه
-كامل قبل ما تكتب كود بناءً عليه.
+1. **🎨 طبقة الهوية (Identity Layer)** — **self-contained بالكامل**: بتُنسخ
+   **حرفيًا** (كود، مش وصف) من ملف `identities/<اسم-الهوية>.md` اللي المهمة
+   حددته، وبعدين **قيم بيانات المحتوى بس** بتتعدّل لتطابق المهمة الحالية
+   (السورة، القارئ، نص الآيات، أو أي شكل محتوى تاني حسب الهوية — راجع "عقد ملف
+   هوية `.md`" تحت). فيها بيانات المحتوى، الألوان، الخطوط، الـ CSS، منطق جلب أي
+   أصول الهوية محتاجاها (صوت/صورة/فيديو B-roll)، ومنطق الرسم/الحركة على الـ
+   canvas.
+2. **⚙️ الطبقة التقنية الثابتة (Fixed Technical Layer)** — **موجودة كاملة تحت
+   في القسم ده، ثابتة حرفيًا في كل `scene.html` تكتبه أيًا كانت الهوية أو
+   المهمة، ومالهاش أي علاقة بمحتوى ديني أو قرآني تحديدًا.** فيها Mediabunny،
+   الـ render hooks، أدوات جلب أصول عامة (صوت/فيديو B-roll)، وحلقة التصدير.
+   **تُنسخ زي ما هي من غير أي تعديل** — دي بالظبط النقطة اللي بتضمن إن أي هوية
+   جديدة (حتى لو منطقها ومحتواها مختلف تمامًا عن أي هوية موجودة) هتشتغل مع
+   الرانر من غير مفاجآت.
 
-### تلميحات مُختبرة عندنا بس (مش موجودة في التوثيق العام، من تجربة فعلية على الـ CI)
-- **AAC encoder polyfill إلزامي دايمًا لو الفيديو فيه صوت** (`canEncodeAudio('aac')`
-  ثم `registerAacEncoder()` من `@mediabunny/aac-encoder` لو مش مدعوم أصليًا)
-  — Chrome على Linux (بيئة الـ CI) مفيهوش AAC encoder أصلي في WebCodecs، بغض
-  النظر عن مصدر الصوت.
-- **ترتيب محاولات الكودك المُختبر عندنا** (جرّب بالترتيب ده وارجع للتالي لو
-  فشل): `avc` عادي (`QUALITY_HIGH`) ← `avc` ببت ريت أقل (~3.5Mbps) ←
-  `avc` بـ `fullCodecString: 'avc1.42001f'` ← `vp9`/WebM ← `vp8`/WebM (مع
-  `opus` بدل `aac` لو الحاوية WebM). كل محاولة داخل حاوية MP4 لازم تكون AVC،
-  وكل محاولة WebM لازم تكون VP9/VP8 — الحاوية والكودك مرتبطين.
-- `'avc'`/`'aac'`/`'opus'` نصوص عادية (strings)، مش قيم مستوردة من أي مكان —
-  لا يوجد export اسمه `VideoCodec`/`AudioCodec` وقت التشغيل.
-- **لو محتاج B-roll فيديو خلفية**: `Input` + `UrlSource` (أو `BlobSource`)
-  + `CanvasSink` بيدّوك فريم كانفاس جاهز في أي وقت (`sink.getCanvas(t)`) —
-  اقرأ قسم "Media sinks" → "Video data sinks" بالتوثيق للتفاصيل الكاملة
-  (خيارات `fit`/`crop`/`poolSize`). **مهم**: قراءة فريم فيديو async، فـ
-  `drawSceneAtTime` لازم تكون `async` وتتـ`await` (تفاصيل في عقد ملف الهوية
-  تحت) عشان تقدر تستخدم `await sink.getCanvas(t)` جواها.
+**قاعدة الدمج**: JS كله (الطبقتين) بيتحط في `<script type="module">` واحد
+بالترتيب فوق (هوية ← تقني). ترتيب التعريفات مش بيأثر على التشغيل فعليًا (الدوال
+بتتنفذ بعد ما الملف كله يتحمّل عن طريق `window.addEventListener('load', init)`)،
+لكن الترتيب ده بيخلي الملف مقروء ومنظّم، وبيضمن إن أي متغير تعرّفه الهوية (زي
+`CONFIG` أو `audioBuffer`) يكون موجود فعليًا وقت ما الطبقة التقنية تحتاجه.
 
-### الملحق التقني الثابت — انسخه حرفيًا زي ما هو
+---
+
+### 🎨 عقد ملف هوية `.md` — إيه اللي لازم يوفّره
+ملف `identities/<اسم>.md` هو **مواصفة كاملة قابلة للنسخ الحرفي**، مش وصف كلامي
+عام، **self-contained بالكامل** — فيها بيانات المحتوى، جلب الأصول، والتصميم
+مع بعض. **ميحتويش على أي حاجة من الطبقة التقنية تحت (مفيش Mediabunny، مفيش
+render hooks، مفيش محرك تصدير)** — دول موجودين مرة واحدة بس في الطبقة التقنية
+الثابتة، وتكرارهم جوه ملف الهوية خطأ في حد ذاته (تكرار كود بيصعّب الصيانة، ولو
+حصل تعارض بينه وبين النسخة الثابتة هيبقى مصدر باگ غامض).
+
+كل ملف هوية `.md` لازم يحتوي على الأقسام دي بالترتيب:
+
+1. **فقرة وصف قصيرة**: الاسم، الطابع البصري/الروح العامة، الأبعاد ونسبتها،
+   حالة الاستخدام المناسبة، **وشكل بيانات المحتوى اللي الهوية دي بتحتاجه
+   بالتحديد** (أسماء الحقول ومعناها — مثلًا "`SURAH_VERSES`: مصفوفة فيها
+   `text` و`tafseer` لكل آية" أو "`HADITH_TEXT`: نص الحديث كامل، `HADITH_SOURCE`:
+   مين رواه") — عشان أي حد يكتب محتوى مهمة جديدة بالهوية دي يعرف بالظبط إيه
+   المطلوب منه من غير ما يرجع لأي مكان تاني.
+2. **روابط الخطوط** (`<link>` كاملة لـ Google Fonts أو أي مصدر خطوط).
+3. **كتلة CSS كاملة** — تستهدف الـ IDs/classes الثابتة دي بالظبط (موجودة في هيكل
+   الـ HTML الثابت تحت): `body`, `#viewport`, `canvas` (أو `#shortsCanvas`),
+   `#hud`, `.spinner` + `@keyframes spin`, `#status-text`, `#controls-overlay`,
+   `.btn`, `.btn-preview`, `.btn-render`, `#console-modal`, `#console-header`,
+   `#console-output`, `.log-line`, `.log-info`, `.log-warn`, `.log-error`. لازم
+   تبدأ بـ `* { box-sizing: border-box; margin: 0; padding: 0; }`.
+4. **أبعاد الكانفاس** (`width`/`height` اللي هتتحط في `<canvas>` في الـ HTML).
+5. **كود JS الهوية بالكامل — self-contained من غير أي اعتماد على متغيرات من
+   طبقة تانية**. الكتلة دي بتتنسخ حرفيًا (البنية والأسماء) في `scene.html`،
+   وبعدين **قيم قسم "بيانات المحتوى" بس** هي اللي بتتعدّل لكل مهمة (نتيجة
+   `curl`/طلب المستخدم الفعلي — راجع القسم 4، قاعدة "ممنوع الكتابة من
+   الذاكرة")، بنفس الترتيب:
+   - **بيانات المحتوى**: `const`/`let` تعرّف شكل المحتوى اللي الهوية دي بالذات
+     محتاجاه — الأسماء والحقول حرة تمامًا لكل هوية (ممكن تكون
+     `SURAH_NUMBER`/`RECITER_ID`/`SURAH_VERSES[]`، أو `HADITH_TEXT`/`HADITH_SOURCE`،
+     أو أي شكل تاني)، **لازم توثّق بوضوح في فقرة الوصف (البند 1) إيه الحقول
+     المطلوبة ومعناها**. القيم المكتوبة هنا في ملف الـ `.md` نفسه قيم **مثال
+     فقط** توضح الشكل، مش المفروض تتنسخ حرفيًا كقيم حقيقية.
+   - `CONFIG` (`{ fps, width, height, duration: <أي قيمة placeholder> }` —
+     الـ `duration` هتتحدد فعليًا جوه `prepareIdentity()`).
+   - `OUTPUT_FILENAME` (قيمة محتوى خاصة بالمهمة، اسم ثابت من أسماء العقد).
+   - `let audioBuffer = null;` (قيمة ابتدائية — بتتملى فعليًا جوه
+     `prepareIdentity()` لو الهوية فيها صوت، وتفضل `null` لو من غيره).
+   - `PALETTE` (كل الألوان المستخدمة، بأسماء واضحة)، ثوابت الخطوط (زي
+     `QURAN_FONT`, `HEADER_FONT`)، وأي ثوابت تصميم تانية (زي مركز Y للنص، أو
+     نسب الـ stagger في الحركة).
+   - أي متغيرات حالة داخلية للهوية محتاجاها بين `prepareIdentity()` و
+     `drawSceneAtTime()` (زي `parsedScenes` مثلًا) — تُعرّف وتُدار بالكامل جوه
+     ملف الهوية، مش الطبقة التقنية.
+   - أي دوال رسم مساعدة داخلية تحتاجها الهوية (خلفية، هيدر، بطاقات، عدادات...).
+   - **الدالتين الإلزاميتين لازم يتعرّفوا في الآخر** (تفاصيل العقد الكامل بينهم
+     وبين الطبقة التقنية في البند 7 تحت):
+     - `async function prepareIdentity()`
+     - `async function drawSceneAtTime(time)`
+6. **أدوات جاهزة من الطبقة التقنية، متاحة تلقائيًا لكود الهوية من غير استيراد
+   أو إعادة تعريف** (لو عرّفتها تاني جوه ملف الهوية، ده تكرار غير مطلوب):
+   - **`ctx`** (الـ 2D context بتاع الكانفاس الرئيسي).
+   - **`layoutArabicParagraph(text, font, maxWidth, wordGap, lineHeight, centerY)`**
+     — خوارزمية تخطيط نص عربي RTL عامة. لو الهوية محتاجة خوارزمية تخطيط مختلفة
+     تمامًا، عرّف دالة بديلة باسم مختلف جوه كود الهوية نفسه.
+   - **`Easing.linear / .easeOutCubic / .easeInOutCubic`**، **`clamp01(val)`**،
+     **`toArabicDigits(input)`**.
+   - **`fetchAndDecodeAudio(url)`** (`async`): بتجيب وتفكّ أي ملف صوت من أي
+     رابط `https://` (مش مخصصة لمصدر معيّن). بترفض روابط `http://` تلقائيًا،
+     وبتتحقق إن حجم الملف المُجاب مش صغير بشكل غير طبيعي (أقل من ~1 كيلوبايت،
+     غالبًا صفحة خطأ مش صوت حقيقي) قبل ما تحاول تفكّه — وبترمي خطأ واضح
+     (`throw`) في الحالتين. بترجع `AudioBuffer` جاهز.
+   - **`concatenateAudioBuffers(buffers)`**: بتاخد مصفوفة `AudioBuffer[]`
+     وترجّع `{ buffer, segments }` — `buffer` هو `AudioBuffer` واحد ملزّق منهم
+     كلهم ورا بعض، و`segments` مصفوفة `{ start, end, duration }` (بالثواني،
+     محسوبة من المدد الحقيقية الفعلية) بنفس ترتيب وعدد الـ `buffers` اللي
+     دخلت. مفيدة لباترن "مقطع بمقطع" (زي آية بآية) لو الهوية قررت تستخدمه،
+     لكن مش مفروضة عليها — هوية بصوت واحد كامل من غير تقطيع أصلًا هتستخدم
+     `fetchAndDecodeAudio()` مرة واحدة بس من غير `concatenateAudioBuffers()`
+     خالص.
+   - **`createBrollFrameSampler(url, options?)`** (`async`): بتفتح فيديو
+     B-roll من رابط `https://` (باستخدام `Input`+`UrlSource`+`CanvasSink` من
+     Mediabunny) وترجّع `{ getFrameAt(time) }`؛ `getFrameAt(time)` (`async`)
+     بترجّع `HTMLCanvasElement`/`OffscreenCanvas` لآخر فريم عند أو قبل الوقت
+     المطلوب (بالثواني)، أو `null` لو الوقت قبل بداية الفيديو. `options`
+     اختيارية: `{ width, height, fit: 'fill'|'contain'|'cover', poolSize }`.
+     **نفس قاعدة CORS بتاعة الصور تنطبق هنا** — الرابط لازم يدعم CORS فعليًا
+     وإلا الكانفاس هيتعتبر "tainted" وقت الرسم عليه.
+   - **`ensureAacEncoderAvailable()`**: بتتنادى تلقائيًا من الطبقة التقنية
+     نفسها قبل أي تصدير — الهوية مش محتاجة تناديها بنفسها أبدًا.
+7. **العقد بين الهوية والطبقة التقنية — أقل ما يمكن، عمدًا**: الهوية لازم
+   **تعرّف** المتغيرات والدوال دي بالأسماء دي بالظبط، عشان الطبقة التقنية تقدر
+   تستخدمها:
+   - **`CONFIG`**: `{ fps, width, height, duration }` — `duration` لازم يكون
+     **قيمة نهائية صحيحة قبل ما `prepareIdentity()` يخلص**، سواء الهوية فيها
+     صوت (المدة بتساوي مدة الصوت الحقيقي) أو من غيره (الهوية بتقرر مدة ثابتة
+     أو محسوبة بطريقتها الخاصة).
+   - **`OUTPUT_FILENAME`**: اسم ملف الإخراج (من غير امتداد)، قيمة محتوى خاصة
+     بالمهمة.
+   - **`audioBuffer`**: `AudioBuffer` لو الهوية فيها صوت، أو `null` صراحة لو
+     من غيره. الطبقة التقنية بتتصرف تلقائيًا في الحالتين (بتضيف مسار صوت
+     للتصدير لو موجود، وبتشغّل معاينة صوتية حية لو موجود، ومش بتعمل أي حاجة
+     متعلقة بالصوت لو `null`).
+   - **`function prepareIdentity()`** (`async`): بتتنادى مرة واحدة بس، أول
+     حاجة بعد ما الصفحة تحمّل. بتعمل **كل** حاجة الهوية دي محتاجاها من غير
+     استثناء: جلب/فكّ أي صوت (لو محتاجة)، جلب أي صورة (لو محتاجة)، تجهيز أي
+     فيديو B-roll (لو محتاجة)، حساب أي تخطيط نص أو بيانات مشاهد لازمة للرسم —
+     وفي الآخر، `CONFIG.duration` و`audioBuffer` (لو فيه) لازم يكونوا نهائيين
+     وصحيحين.
+   - **`function drawSceneAtTime(time)`** (**`async` دايمًا، حتى لو الهوية مش
+     محتاجة B-roll خالص** — استدعاء `await` على دالة `sync` عادي وسريع، مفيش
+     تكلفة حقيقية، والهدف إن أي هوية تقدر تسحب فريم فيديو B-roll جواها لاحقًا
+     من غير ما نغيّر العقد تاني): نقطة الدخول الوحيدة اللي الطبقة التقنية
+     بتناديها كل فريم (معاينة حية أو تصدير فعلي). أول سطر فيها لازم يكون
+     `state.currentTime = time;` (احتياطي لو الصوت فشل يتحمّل)، وبعدين ترسم
+     الخلفية والمشهد بناءً على بيانات المشاهد اللي `prepareIdentity()` جهّزها.
+
+   **باقي أي حاجة داخلية للهوية — شكل بيانات المحتوى، طريقة جلب الأصول، أسماء
+   أي متغيرات/دوال تانية غير دي — شأن الهوية بالكامل، مفيش قيد عليها من الطبقة
+   التقنية خالص.**
+8. **ملاحظات/تنبيهات خاصة بالهوية دي بس** (لو فيه)، زي قسم "القسم 5" القديم —
+   دلوقتي بقت جوه ملف الهوية نفسه بدل ما تتوزع في `AGENTS.md`.
+
+---
+
+### ⚙️ الطبقة التقنية الثابتة — الهيكل الكامل، انسخه حرفيًا زي ما هو
+ده الجزء اللي **ثابت 100%** في كل `scene.html`. أي تعديل فيه (حتى لو شكله بسيط
+أو "تحسين") يعتبر مخالفة للعقد التقني.
 
 **هيكل الـ `<head>`/`<body>` الثابت** (الأماكن المعلّمة بـ 🎨 بتتملى من ملف الهوية):
 
@@ -211,26 +373,26 @@ sources`, `Media sinks`, `Writing media files`, `Converting media files`,
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Video Clip (مع دعم Agent Auto-Render)</title>
+    <title>AI Video Clip — القرآن الكريم (مع دعم Agent Auto-Render)</title>
 
-    <!-- 🎨 IDENTITY: روابط الخطوط -->
+    <!-- 🎨 IDENTITY: روابط الخطوط (من البند 2 في ملف identities/<اسم>.md) -->
 
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
 
-    <!-- 🎨 IDENTITY: كتلة الـ CSS كاملة -->
+    <!-- 🎨 IDENTITY: كتلة الـ CSS كاملة (من البند 3 في ملف identities/<اسم>.md) -->
     <style>
     </style>
 </head>
 <body>
     <div id="viewport">
-        <!-- 🎨 IDENTITY: width/height -->
+        <!-- 🎨 IDENTITY: width/height من البند 4 في ملف الهوية -->
         <canvas id="shortsCanvas" width="1080" height="1920"></canvas>
-        <div id="hud"><div class="spinner" id="spinner"></div><span id="status-text">جاري التحضير...</span></div>
+        <div id="hud"><div class="spinner" id="spinner"></div><span id="status-text">جاري تحضير فيديو الشورتس العمودي...</span></div>
         <div id="controls-overlay">
             <button class="btn btn-preview" id="btn-replay"><i class="ph ph-arrow-counter-clockwise"></i> تشغيل المعاينة</button>
             <button class="btn btn-preview" id="btn-toggle-console"><i class="ph ph-terminal-window"></i> سجل الأخطاء</button>
-            <button class="btn btn-render" id="btn-render-start"><i class="ph-fill ph-video-camera"></i> تصدير الفيديو</button>
+            <button class="btn btn-render" id="btn-render-start"><i class="ph-fill ph-video-camera"></i> تصدير Shorts (MP4 + صوت)</button>
         </div>
     </div>
 
@@ -252,19 +414,19 @@ sources`, `Media sinks`, `Writing media files`, `Converting media files`,
     </script>
 
     <script type="module">
-        import { Output, Mp4OutputFormat, WebMOutputFormat, BufferTarget, CanvasSource, AudioBufferSource, QUALITY_HIGH, canEncodeAudio } from 'mediabunny';
+        import { Output, Mp4OutputFormat, WebMOutputFormat, BufferTarget, CanvasSource, AudioBufferSource, QUALITY_HIGH, canEncodeAudio, Input, UrlSource, ALL_FORMATS, CanvasSink } from 'mediabunny';
 
-        // ============ 🎨 كود ملف الهوية بالكامل هنا (منسوخ حرفيًا من identities/<اسم>.md) ============
-        // لازم يعرّف: CONFIG, OUTPUT_FILENAME, audioBuffer (أو null),
-        // async function prepareIdentity(), async function drawSceneAtTime(time)
+        // ============ 🎨 طبقة الهوية بالكامل — هنا (منسوخة حرفيًا من
+        // identities/<اسم>.md، بيانات المحتوى داخلها معدَّلة لتطابق المهمة
+        // الحالية فقط) ============
 
-        // ============ ⚙️ الملحق التقني الثابت — من هنا تحت، انسخه حرفيًا ============
+        // ============ ⚙️ الطبقة التقنية الثابتة — من هنا تحت، تُنسخ حرفيًا ============
     </script>
 </body>
 </html>
 ```
 
-**الملحق التقني الثابت بالكامل** (يحل محل التعليق الأخير فوق):
+**كود الطبقة التقنية الثابتة بالكامل** (يحل محل التعليق الأخير فوق):
 
 ```js
 const canvas = document.getElementById('shortsCanvas');
@@ -272,9 +434,9 @@ const ctx = canvas.getContext('2d', { willReadFrequently: true });
 const statusText = document.getElementById('status-text');
 const spinner = document.getElementById('spinner');
 
-let previewAudioEl = null;
-let isRendering = false;
-let animationFrameId = null;
+let audioAudioEl = null;
+let sharedAudioCtx = null;
+let state = { currentTime: 0, isRendering: false, animationFrameId: null };
 
 // --- AI AGENT AUTOMATION HOOKS ---
 window.renderStatus = 'loading'; // 'loading' | 'ready' | 'rendering' | 'completed' | 'error'
@@ -290,7 +452,7 @@ function logToConsole(msg, type = 'info') {
     output.scrollTop = output.scrollHeight;
 }
 
-// --- أدوات عامة صغيرة، متاحة لكود الهوية لو حابة تستخدمها (اختيارية، مش إلزامية) ---
+// --- أدوات عامة متاحة دايمًا لكود الهوية، من غير ما يعيد تعريفها ---
 function clamp01(val) { return Math.max(0, Math.min(1, val)); }
 
 function toArabicDigits(input) {
@@ -304,9 +466,6 @@ const Easing = {
     easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 };
 
-// خوارزمية تخطيط نص عربي RTL عامة — استخدمها لو الهوية محتاجة نص، من غير
-// إعادة تعريفها. لو محتاجة خوارزمية مختلفة تمامًا (أو مش محتاجة نص خالص، زي
-// هوية B-roll بحتة)، تجاهلها.
 function layoutArabicParagraph(text, font, maxWidth, wordGap, lineHeight, centerY) {
     ctx.font = font;
     const words = text.split(' ');
@@ -341,9 +500,7 @@ function layoutArabicParagraph(text, font, maxWidth, wordGap, lineHeight, center
     return flatWords;
 }
 
-// تحويل AudioBuffer إلى WAV Blob — للمعاينة الحية بس (مش جزء من الفيديو
-// المُصدَّر، ده Mediabunny بياخد الـ AudioBuffer مباشرة زي ما هو موضح في
-// docs/mediabunny-llms-full.txt)
+// --- تحويل AudioBuffer إلى WAV Blob — أداة عامة، مستخدمة هنا لمعاينة الصوت الحية بس ---
 function audioBufferToWavBlob(buffer) {
     const numOfChan = buffer.numberOfChannels;
     const length = buffer.length * numOfChan * 2 + 44;
@@ -374,35 +531,143 @@ function audioBufferToWavBlob(buffer) {
     return new Blob([out], { type: "audio/wav" });
 }
 
-// --- حلقة المعاينة الحية — بتنادي drawSceneAtTime بس، مفيهاش أي منطق تصميم.
-// بتشتغل بصوت (متزامنة مع previewAudioEl) أو من غير صوت خالص (ساعة داخلية) ---
-function startPreviewLoop() {
-    if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    let silentClockStart = null;
+// --- Shared AudioContext — مستخدم داخليًا من fetchAndDecodeAudio/concatenateAudioBuffers ---
+function getSharedAudioContext() {
+    if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return sharedAudioCtx;
+}
 
-    if (previewAudioEl) {
-        previewAudioEl.currentTime = 0;
-        previewAudioEl.play().catch(e => logToConsole("تنبيه الصوت: " + e.message, 'warn'));
-    } else {
-        silentClockStart = performance.now();
+// --- جلب وفكّ أي ملف صوت من أي رابط — أداة عامة، مالهاش علاقة بمصدر معيّن ---
+// بترفض روابط http:// (لازم https://)، وبتتحقق إن حجم الملف مش صغير بشكل غير
+// طبيعي (أقل من ~1 كيلوبايت، غالبًا صفحة خطأ مش صوت حقيقي) قبل ما تحاول تفكّه.
+async function fetchAndDecodeAudio(url) {
+    if (!/^https:\/\//i.test(url)) {
+        throw new Error(`رابط صوت غير آمن (لازم https://): ${url}`);
+    }
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`فشل جلب الصوت (HTTP ${res.status}): ${url}`);
+    const arrayBuf = await res.arrayBuffer();
+    if (arrayBuf.byteLength < 1024) {
+        throw new Error(`حجم الملف صغير جدًا (${arrayBuf.byteLength} بايت) — على الأغلب صفحة خطأ مش صوت حقيقي: ${url}`);
+    }
+    return getSharedAudioContext().decodeAudioData(arrayBuf);
+}
+
+// --- تلزيق أكتر من AudioBuffer ورا بعض في واحد، وترجيع توقيتات كل مقطع (المدد الحقيقية) ---
+function concatenateAudioBuffers(buffers) {
+    if (!buffers || buffers.length === 0) throw new Error("مفيش أي AudioBuffer لتلزيقه");
+
+    const sampleRate = buffers[0].sampleRate;
+    const channelsCount = buffers[0].numberOfChannels;
+    const totalSamples = buffers.reduce((sum, b) => sum + b.length, 0);
+    const combined = getSharedAudioContext().createBuffer(channelsCount, totalSamples, sampleRate);
+
+    let sampleOffset = 0;
+    let timeOffset = 0.0;
+    const segments = [];
+
+    for (const buf of buffers) {
+        for (let ch = 0; ch < channelsCount; ch++) {
+            combined.getChannelData(ch).set(buf.getChannelData(ch), sampleOffset);
+        }
+        const duration = buf.duration;
+        segments.push({ start: timeOffset, end: timeOffset + duration, duration });
+        sampleOffset += buf.length;
+        timeOffset += duration;
+    }
+
+    return { buffer: combined, segments };
+}
+
+// --- أداة عامة: تجيب فريم فيديو B-roll في أي وقت، باستخدام Input+CanvasSink من Mediabunny ---
+// استخدام اختياري بالكامل — أي هوية تناديها جوه prepareIdentity() لو محتاجة
+// خلفية فيديو (مش صورة ثابتة). نفس قاعدة CORS بتاعة الصور تنطبق هنا: الرابط
+// لازم يدعم CORS فعليًا وإلا الكانفاس هيتعتبر "tainted" وقت الرسم عليه.
+async function createBrollFrameSampler(url, options = {}) {
+    const input = new Input({ source: new UrlSource(url), formats: ALL_FORMATS });
+    const videoTrack = await input.getPrimaryVideoTrack();
+    if (!videoTrack) throw new Error(`مفيش مسار فيديو (video track) في الرابط: ${url}`);
+
+    const sink = new CanvasSink(videoTrack, {
+        width: options.width,
+        height: options.height,
+        fit: options.fit || 'cover',
+        poolSize: options.poolSize || 2,
+    });
+
+    return {
+        input,
+        videoTrack,
+        async getFrameAt(time) {
+            const wrapped = await sink.getCanvas(time);
+            return wrapped ? wrapped.canvas : null;
+        },
+    };
+}
+
+// --- حلقة المعاينة الحية — بتنادي drawSceneAtTime بس (async دايمًا)، من غير أي منطق تصميم ---
+function startPreviewLoop() {
+    if (state.animationFrameId) cancelAnimationFrame(state.animationFrameId);
+    if (audioAudioEl) {
+        audioAudioEl.currentTime = 0;
+        audioAudioEl.play().catch(e => logToConsole("تنبيه الصوت: " + e.message, 'warn'));
     }
 
     async function loop() {
-        if (isRendering) return;
-        const currTime = previewAudioEl
-            ? previewAudioEl.currentTime
-            : (performance.now() - silentClockStart) / 1000;
-
+        if (state.isRendering) return;
+        const currTime = audioAudioEl ? audioAudioEl.currentTime : state.currentTime;
         await drawSceneAtTime(currTime);
 
         if (currTime < CONFIG.duration) {
-            animationFrameId = requestAnimationFrame(loop);
+            state.animationFrameId = requestAnimationFrame(loop);
         } else {
             statusText.textContent = "جاهز للعرض والتصدير ✓";
             spinner.style.display = 'none';
         }
     }
-    animationFrameId = requestAnimationFrame(loop);
+    state.animationFrameId = requestAnimationFrame(loop);
+}
+
+// --- AAC Encoder Polyfill — إلزامي على بيئة الـ CI (Chrome على Linux مفيهوش
+// AAC encoder أصلي في WebCodecs، سبب تاريخي مرتبط برخصة AAC) ---
+async function ensureAacEncoderAvailable() {
+    if (!(await canEncodeAudio('aac'))) {
+        logToConsole("تسجيل AAC Polyfill للأنظمة غير المدعومة أصليًا...");
+        const { registerAacEncoder } = await import('@mediabunny/aac-encoder');
+        registerAacEncoder();
+    }
+}
+
+function getAudioConfigForContainer(container) {
+    if (container === 'webm') return { codec: 'opus', bitrate: 128_000 };
+    return { codec: 'aac', bitrate: QUALITY_HIGH };
+}
+// ملاحظة حاسمة: 'avc'/'aac'/'opus' هنا نصوص عادية (strings)، مش قيم مستوردة —
+// لا يوجد export اسمه VideoCodec/AudioCodec وقت التشغيل (TypeScript type بس).
+
+async function attemptRealExport(attempt, totalFrames, fps) {
+    const format = attempt.container === 'webm' ? new WebMOutputFormat() : new Mp4OutputFormat();
+    const output = new Output({ format, target: new BufferTarget() });
+    const videoSource = new CanvasSource(canvas, attempt);
+    const audioSource = new AudioBufferSource(getAudioConfigForContainer(attempt.container));
+
+    output.addVideoTrack(videoSource, { frameRate: fps });
+    output.addAudioTrack(audioSource);
+
+    await output.start();
+    if (audioBuffer) await audioSource.add(audioBuffer);
+    audioSource.close();
+
+    const frameDuration = 1 / fps;
+    for (let i = 0; i < totalFrames; i++) {
+        const timestamp = i / fps;
+        window.renderProgress = timestamp / CONFIG.duration;
+        await drawSceneAtTime(timestamp);
+        await videoSource.add(timestamp, frameDuration);
+    }
+    videoSource.close();
+    await output.finalize();
+    return output.target.buffer;
 }
 
 // تحويل ArrayBuffer إلى base64 — جسر لسكريبت الـ Playwright (Blob مينفعش يترجع من page.evaluate)
@@ -416,23 +681,70 @@ function arrayBufferToBase64(buffer) {
     return btoa(binary);
 }
 
-// --- exportWithFallback: الدالة الوحيدة اللي مفيش نسخة كود ثابتة منها هنا
-// عمدًا — اكتبها بالاستعانة الكاملة بـ docs/mediabunny-llms-full.txt (افتحه
-// بالكامل) + التلميحات المُختبرة فوق. لازم تحقق:
-//   1. تفعيل AAC polyfill لو الفيديو فيه صوت (audioBuffer !== null).
-//   2. window.renderStatus = 'rendering' + إيقاف المعاينة (isRendering = true).
-//   3. بناء Output (Mp4OutputFormat/BufferTarget) + CanvasSource للفيديو +
-//      (لو فيه صوت) AudioBufferSource — التفاصيل الكاملة في قسم "Media
-//      sources"/"Writing media files" بالتوثيق.
-//   4. لف على الفريمات من 0 لـ CONFIG.duration بخطوة 1/CONFIG.fps، نادي
-//      await drawSceneAtTime(timestamp) ثم await videoSource.add(...).
-//   5. عند فشل محاولة، جرّب القائمة الاحتياطية المُختبرة فوق بالترتيب.
-//   6. عند النجاح: window.__renderFilename/__renderBase64 (بـ
-//      arrayBufferToBase64)، window.renderStatus = 'completed',
-//      window.renderProgress = 1.0, وأطلق حدث video-render-complete.
-//   7. عند فشل كل المحاولات: window.renderStatus = 'error' +
-//      window.__renderError.
-// async function exportWithFallback() { ... }
+async function exportWithFallback() {
+    state.isRendering = true;
+    window.renderStatus = 'rendering';
+    if (state.animationFrameId) cancelAnimationFrame(state.animationFrameId);
+    if (audioAudioEl) audioAudioEl.pause();
+
+    spinner.style.display = 'inline-block';
+    statusText.textContent = "جاري تصدير فيديو الشورتس فريم فريم...";
+    logToConsole(`بدء عملية التصدير (${CONFIG.width}x${CONFIG.height}, ${OUTPUT_FILENAME})...`);
+
+    await ensureAacEncoderAvailable();
+
+    const videoAttempts = [
+        { codec: 'avc', bitrate: QUALITY_HIGH, container: 'mp4' },
+        { codec: 'avc', bitrate: 3_500_000, container: 'mp4' },
+        { codec: 'avc', fullCodecString: 'avc1.42001f', bitrate: 3_000_000, container: 'mp4' },
+        { codec: 'vp9', bitrate: 4_000_000, container: 'webm' },
+        { codec: 'vp8', bitrate: 3_000_000, container: 'webm' }
+    ];
+
+    const totalFrames = Math.ceil(CONFIG.duration * CONFIG.fps);
+
+    for (const attempt of videoAttempts) {
+        try {
+            logToConsole(`تجربة التصدير بـ ${attempt.codec} (${attempt.bitrate ? (attempt.bitrate/1e6)+'Mbps' : 'auto'}) داخل حاوية ${attempt.container}...`);
+            const buffer = await attemptRealExport(attempt, totalFrames, CONFIG.fps);
+            logToConsole(`تم التصدير بنجاح! نوع الحاوية: ${attempt.container}`);
+
+            const mimeType = attempt.container === 'webm' ? 'video/webm' : 'video/mp4';
+            const blob = new Blob([buffer], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+
+            window.renderResult = { blob, url, container: attempt.container };
+
+            // امتداد الملف بيتحدد فعليًا من نوع الحاوية الحقيقي اللي نجح — ممنوع
+            // لأي سكريبت خارجي يغيّره لاحقًا (راجع القسم 3، الدرس رقم 11).
+            window.__renderFilename = `${OUTPUT_FILENAME}.${attempt.container}`;
+            window.__renderBase64 = arrayBufferToBase64(buffer);
+
+            window.renderStatus = 'completed';
+            window.renderProgress = 1.0;
+            window.dispatchEvent(new CustomEvent('video-render-complete', { detail: window.renderResult }));
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${OUTPUT_FILENAME}.${attempt.container}`;
+            a.click();
+
+            statusText.textContent = "تم التصدير والتحميل بنجاح ✓";
+            spinner.style.display = 'none';
+            state.isRendering = false;
+            return window.renderResult;
+        } catch (err) {
+            logToConsole(`محاولة ${attempt.codec} لم تكتمل: ${err.message}`, 'warn');
+        }
+    }
+
+    statusText.textContent = "فشل التصدير! راجع سجل الأخطاء.";
+    spinner.style.display = 'none';
+    state.isRendering = false;
+    window.__renderError = "فشلت جميع محاولات التصدير";
+    window.renderStatus = 'error';
+    throw new Error("فشلت جميع محاولات التصدير");
+}
 
 // --- EXPOSE AUTOMATION HOOKS FOR AI AGENTS ---
 window.startVideoRender = exportWithFallback;
@@ -459,23 +771,15 @@ document.getElementById('btn-render-start').addEventListener('click', () => {
 
 async function init() {
     try {
-        await prepareIdentity(); // من كود الهوية — يجيب أي أصول محتاجها ويجهز أي بيانات مشاهد
-
+        await prepareIdentity(); // 🎨 من طبقة الهوية بالكامل — بتجيب/تجهّز كل حاجة الهوية محتاجاها وتحدد CONFIG.duration نهائيًا
         if (audioBuffer) {
-            // لو الهوية فيها صوت، مدته الحقيقية هي مصدر الحقيقة الوحيد لمدة
-            // الفيديو (راجع القسم 4، البند 2) — بتتفرض هنا تلقائيًا.
             const wavBlob = audioBufferToWavBlob(audioBuffer);
-            previewAudioEl = new Audio(URL.createObjectURL(wavBlob));
-            CONFIG.duration = audioBuffer.duration;
+            audioAudioEl = new Audio(URL.createObjectURL(wavBlob));
         }
-        // لو مفيش صوت (audioBuffer === null)، CONFIG.duration لازم يكون
-        // اتحدد فعلًا جوه prepareIdentity() أو في تعريف CONFIG نفسه — دي
-        // مسؤولية الهوية بالكامل في الحالة دي.
-
         statusText.textContent = "جاهز للعرض والتصدير ✓";
         spinner.style.display = 'none';
         window.renderStatus = 'ready';
-        await drawSceneAtTime(0);
+        await drawSceneAtTime(0); // 🎨 من طبقة الهوية، async دايمًا
 
         // AUTOMATED AGENT TRIGGER via URL Parameter: ?autorender=true
         const urlParams = new URLSearchParams(window.location.search);
@@ -494,78 +798,69 @@ async function init() {
 window.addEventListener('load', init);
 ```
 
-### 🎨 عقد ملف هوية `.md` — إيه اللي لازم يوفّره
-ملف `identities/<اسم>.md` هو **مواصفة كاملة self-contained قابلة للنسخ الحرفي**
-(كود، مش وصف عام). كل ملف هوية `.md` لازم يحتوي على الأقسام دي بالترتيب:
+### الأصول (صوت/صورة/فيديو B-roll): تُجاب دايمًا وقت التشغيل جوه المتصفح — من غير تحميل محلي بـ curl
+**ممنوع تحميل أي أصل (صوت أو صورة أو فيديو) بـ `curl` جوه `run_terminal` وحفظه في
+`assets/` والإشارة له بمسار محلي — القاعدة دي بلا استثناء، حتى لو غرضك تجربة
+سريعة أو "تأكد إن الرابط شغال" قبل ما تكتب الكود.** استخدم `curl -sI` (رأس
+الطلب بس، من غير تحميل الملف كامل) لو عايز تتأكد إن رابط موجود، أو جرّب الجلب
+الفعلي جوه المتصفح وقت التشغيل. أي ملف صوت/صورة/فيديو اتحمّل محليًا بـ `curl`
+في مجلد المهمة يعتبر خطأ في سير العمل حتى لو الفيديو النهائي طلع صح، لأنه
+بيضيع وقت وبيوّه لمصدر مش هو اللي فعليًا هيتقرأ وقت الرندر.
 
-1. **فقرة وصف** (الاسم، الطابع البصري/الروح العامة، الأبعاد ونسبتها، حالة
-   الاستخدام، **وأهم حاجة: شكل المحتوى اللي الهوية دي بتستخدمه** — آيات فقط؟
-   آيات+تفسير؟ حديث؟ صوت خارجي بس بدون نص؟ فيديو B-roll؟ أي تركيبة).
-2. **روابط الخطوط** (لو محتاجة نص عربي).
-3. **كتلة CSS كاملة** — تستهدف الـ IDs/classes الثابتة الموجودة في الملحق
-   التقني (`body`, `#viewport`, `canvas`/`#shortsCanvas`, `#hud`, `.spinner`
-   + `@keyframes spin`, `#status-text`, `#controls-overlay`, `.btn`,
-   `.btn-preview`, `.btn-render`, `#console-modal`, `#console-header`,
-   `#console-output`, `.log-line`, `.log-info`, `.log-warn`, `.log-error`).
-   لازم تبدأ بـ `* { box-sizing: border-box; margin: 0; padding: 0; }`.
-4. **أبعاد الكانفاس** (`width`/`height` اللي هتتحط في `<canvas>`).
-5. **منطقة تعديل المحتوى** — ثوابت حرة الشكل تمامًا، بأي أسماء تناسب الهوية
-   دي بالذات (مفيش أسماء موحّدة مفروضة عبر الهويات). لازم تكون معلّمة بتعليق
-   واضح `// ⬛ منطقة قابلة للتعديل لكل فيديو جديد` عشان تتلاقى بسهولة.
-6. **كود JS الهوية بالكامل**، لازم يعرّف في الآخر:
-   - `let CONFIG = { fps, width, height, duration }` — لو فيه صوت، `duration`
-     هنا placeholder هيتفرض عليه القيمة الحقيقية تلقائيًا (راجع الملحق
-     التقني)؛ لو مفيش صوت، القيمة هنا لازم تكون هي الصح فعلًا من غير أي تعديل
-     تلقائي بعد كده.
-   - `const OUTPUT_FILENAME`
-   - `let audioBuffer = null;` — يفضل `null` لو الهوية دي بصرية بحتة، أو
-     بيتحدد جوه `prepareIdentity()` لو فيها صوت.
-   - أي متغيرات/دوال داخلية تانية الهوية محتاجاها (حرة تمامًا).
-   - **دالتين إلزاميتين، الاتنين `async`**:
-     - `async function prepareIdentity()`: بتتنادى مرة واحدة قبل أول رسمة.
-       فيها **كل** منطق جلب/تجهيز الأصول الخاص بالهوية دي (لو موجود): جلب صوت
-       (بـ `fetch()` من أي مصدر، مش شرط everyayah.com)، تحميل صورة
-       (`crossOrigin="anonymous"`)، تجهيز فيديو B-roll (`Input`+`UrlSource`+
-       `CanvasSink` من Mediabunny — راجع التلميحات فوق)، بناء أي بيانات مشاهد
-       لازمة للرسم. لو الهوية مش محتاجة أي أصل خارجي، ممكن تكون شبه فاضية.
-     - `async function drawSceneAtTime(time)`: نقطة الدخول الوحيدة اللي
-       الملحق التقني بيناديها كل فريم (بـ `await`)، سواء في المعاينة أو
-       التصدير. بترسم كل حاجة بناءً على الوقت الحالي.
-7. **أدوات جاهزة اختيارية من الملحق التقني**، متاحة تلقائيًا من غير استيراد:
-   `layoutArabicParagraph`, `Easing`, `clamp01`, `toArabicDigits`, `ctx`.
-8. **ملاحظات معروفة** خاصة بالهوية دي بس (لو فيه).
+- **الصوت**: كل هوية بتجيب صوتها بنفسها جوه `prepareIdentity()` (طبقة الهوية)
+  باستخدام الأداتين العامتين `fetchAndDecodeAudio(url)` و
+  `concatenateAudioBuffers(buffers)` الموجودتين في الطبقة التقنية — تفاصيل
+  الاستخدام في "عقد ملف هوية `.md`" فوق. لو الهوية من غير صوت خالص، تسيب
+  `audioBuffer = null;` زي ما هو.
+- **الصورة/الخلفية**: مش كل الهويات محتاجة صورة خارجية — كتير من الهويات بترسم
+  الخلفية بالكامل بتدرجات الـ canvas من غير أي صورة خارجية أصلًا (راجع كود
+  الهوية نفسها في ملف الـ `.md` بتاعها). لو الهوية فعلًا محتاجة صورة خارجية،
+  اجلبها بـ `<img crossOrigin="anonymous">` جوه `prepareIdentity()` (لازم
+  تُنتظر بـ `await` قبل ما `prepareIdentity()` يخلص، عشان أول فريم بيترسم
+  يلاقيها جاهزة) من رابط مباشر بيدعم CORS، من غير أي API key سري. لو المصدر
+  مش بيدعم CORS، ارجع لخلفية مرسومة بالكانفاس بدل ما تحاول تحمّلها.
+- **فيديو B-roll**: لو الهوية محتاجة خلفية فيديو (مش صورة ثابتة)، استخدم الأداة
+  العامة `createBrollFrameSampler(url)` جوه `prepareIdentity()`، وناديها
+  `getFrameAt(time)` (`async`) جوه `drawSceneAtTime()` وقت الرسم — ده بالظبط
+  سبب إن `drawSceneAtTime()` بقت `async` إلزاميًا في كل الهويات دلوقتي، حتى
+  اللي مش مستخدمة B-roll فعليًا.
+- **قاعدة تجنّب "canvas tainted"**: لازم `scene.html` يتفتح دايمًا عن طريق سيرفر
+  HTTP محلي (زي اللي في وصفة الرندر تحت)، **مش** بمسار `file://` مباشر. أي
+  صورة أو فريم فيديو B-roll بيترسم على الـ canvas، حتى لو من مصدر خارجي، لازم
+  يتحمّل بـ CORS مفعّلة (`crossOrigin = 'anonymous'` للصور، ورابط بيدعم CORS
+  فعليًا لـ `createBrollFrameSampler`) وإلا خرق القاعدة دي بيدّي خطأ
+  `VideoFrames can't be created from tainted sources`. الصوت مالوش المشكلة دي
+  أصلاً لأنه مش بيترسم على الـ canvas. طبقة تعتيم (overlay) غامقة فوق أي خلفية
+  حقيقية دايمًا إلزامية عشان النص يفضل واضح.
 
-### الأصول: كل هوية مسؤولة عن أصولها بنفسها، جوه `prepareIdentity()`
-مفيش دالة جلب أصول عامة مفروضة على كل الهويات (زي `preloadEveryAyahQuranAudio`
-قديمًا) — كل هوية بتجيب اللي هي محتاجاه بس، بنفس المبادئ العامة دي:
+### عقد الـ render hooks الإلزامي — مطابق تمامًا لما هو مكتوب في الطبقة التقنية الثابتة فوق
+كل `scene.html` لازم يحتوي فعليًا على الـ hooks دي شغّالة (موجودة كاملة في الكود
+فوق، منعًا باتًا تتغيّر أسماؤها):
 
-- **fetch مباشر جوه المتصفح وقت التشغيل، من غير تحميل محلي بـ `curl`** —
-  القاعدة دي بلا استثناء لأي أصل (صوت/صورة/فيديو)، حتى لو غرضك تجربة سريعة.
-  استخدم `curl -sI` (رأس الطلب بس) لو عايز تتأكد إن رابط موجود.
-- **الصور**: `crossOrigin = 'anonymous'` إلزامي لأي صورة هتترسم على الـ
-  canvas، وإلا خطأ `VideoFrames can't be created from tainted sources`.
-- **فيديو B-roll**: عبر `Input`+`UrlSource`+`CanvasSink` من Mediabunny —
-  التفاصيل الكاملة في `docs/mediabunny-llms-full.txt`.
-- **قاعدة fallback إلزامية**: لو أصل اختياري فشل يتحمل (صورة، مثلًا)،
-  `prepareIdentity()` لازم تتعامل مع الفشل بـ `try/catch` وترجع لبديل مرسوم
-  بالكانفاس — **الفيديو ميفشلش يتصدّر بس لأن أصل اختياري مكانش موجود**. أصل
-  **إلزامي** (زي الصوت الأساسي لتلاوة قرآنية) لو فشل، يبقى صح إن `prepareIdentity()`
-  ترمي error فعلي (بيتلقفه `init()` ويسجل `renderStatus = 'error'`).
-- **قاعدة تجنّب "canvas tainted"**: `scene.html` لازم يتفتح دايمًا عن طريق
-  سيرفر HTTP محلي (زي اللي في وصفة الرندر تحت)، **مش** بمسار `file://` مباشر.
-
-### عقد الـ render hooks الإلزامي — مطابق تمامًا لما هو مكتوب في الملحق التقني فوق
-كل `scene.html` لازم يحتوي فعليًا على الـ hooks دي شغّالة (موجودة كاملة في
-الملحق التقني، منعًا باتًا تتغيّر أسماؤها):
-
-- `window.renderStatus`: `'loading'` → `'ready'` → `'rendering'` → `'completed'` أو `'error'`.
-- `window.renderProgress`: رقم من 0 لـ 1 بيتحدّث أثناء الرندر.
-- `window.startVideoRender()`: دالة بتبدأ عملية التصدير الفعلية.
-- **دعم `?autorender=true` في رابط الصفحة**: لما موجود، الصفحة تستدعي
-  `startVideoRender()` لوحدها بعد التحميل، من غير أي تفاعل يدوي.
-- **حدث `video-render-complete`**: بيتطلق على `window` بعد نجاح التصدير.
-- `window.__renderFilename` و `window.__renderBase64`: بعد نجاح التصدير،
-  اسم الملف الناتج ومحتواه كـ base64 — جسر لازم لسكريبت الـ Playwright.
+- `window.renderStatus`: يبدأ `'loading'`، يبقى `'ready'` لما كل الأصول تتجهز،
+  `'rendering'` أثناء التصدير، وفي النهاية `'completed'` أو `'error'`.
+- `window.renderProgress`: رقم من `0.0` إلى `1.0` بيتحدّث أثناء `'rendering'`.
+- `window.startVideoRender()`: `async function` تبدأ التصدير فورًا وترجع `Promise`.
+- دعم `?autorender=true` في رابط الصفحة: لو موجود، الصفحة تستدعي
+  `window.startVideoRender()` لوحدها بعد التحميل من غير أي تفاعل يدوي (زرار).
+- حدث `video-render-complete` يتطلق على الـ `window`
+  (`window.dispatchEvent(new CustomEvent('video-render-complete', {...}))`) فور
+  اكتمال التصدير بنجاح.
+- عند النجاح، النتيجة تتخزن في `window.renderResult` (زي الهوية الأصلية) **بالإضافة**
+  لمتغيرين لازمين عشان سكريبت الـ Playwright يقدر ياخد الفيديو فعليًا (الـ `Blob`
+  object مينفعش يترجع مباشرة من `page.evaluate`):
+```js
+  const finalBuffer = output.target.buffer; // ArrayBuffer من Mediabunny (القسم اللي فوق)
+  window.__renderFilename = "اسم-الملف.mp4";
+  window.__renderBase64 = arrayBufferToBase64(finalBuffer); // دالة base64 قياسية
+  window.renderStatus = 'completed';
+  window.dispatchEvent(new CustomEvent('video-render-complete', { detail: { filename: window.__renderFilename } }));
+```
+- عند الفشل (جوه try/catch حوالين كل حاجة):
+```js
+  window.renderStatus = 'error';
+  window.__renderError = err.message;
+```
 
 ### دليل كتابة سكريبت الرندر — انسخه حرفيًا، محدّث وشغّال فعليًا
 اكتبه بأمر `run_terminal` (heredoc) في ملف زي `render-runner.js`، وشغّله بعد كده
@@ -655,17 +950,17 @@ async function startServer() {
 **قاعدة سرعة مهمة**: لو الرندر فشل، **صحّح نفس ملف `scene.html` مباشرة وأعد تشغيل
 `node render-runner.js`** — ممنوع تكتب ملفات اختبار منفصلة (زي `test_xxx.html`) لتجربة
 استيراد أو API، وممنوع منعًا باتًا تنفّذ `node agent.js` بأي شكل (راجع التنبيه الحاسم
-أول الملف).
+أول الملف). كل المعلومات اللي محتاجها موجودة في `console_logs`/`failed_requests` أو
+في القسم ده من `AGENTS.md` نفسه.
 
 ### ملفات العلامة (Marker Files) — إلزامية لتتبع التقدم
 - بعد ما ترفع فيديو وملف وصفه فعليًا على الـ Release (بأمر `gh release upload` حقيقي
-  ناجح، مش افتراض)، اكتب: `video_<معرّف فريد للفيديو>_done.json` يحتوي
-  `{"video_id": "...", "release_video_url": "...", "release_md_url": "..."}`
-  (المعرّف الفريد ممكن يكون رقم سورة، اسم حديث، أو أي معرّف يميّز الفيديو ده عن
-  غيره حسب نوع المحتوى). **`agent.js` بيتحقق فعليًا** إن اسمَي الملفين في
-  الرابطين دول موجودين حقًا كـ assets على الـ Release عن طريق `gh release view`
-  قبل ما يقبل ملف العلامة ده — لو مش موجودين هيرفضه برسالة توضح إيه الناقص،
-  فتأكد إن الرفع حصل فعلًا الأول.
+  ناجح، مش افتراض)، اكتب: `video_<معرّف فريد للفيديو>_done.json` (المعرّف ممكن يكون
+  رقم ترتيب الفيديو في المهمة، أو جزء مميز من `OUTPUT_FILENAME` — أي حاجة فريدة
+  تكفي، مفيش شكل موحّد مفروض) يحتوي `{"identifier": "...", "release_video_url": "...", "release_md_url": "..."}`.
+  **`agent.js` بيتحقق فعليًا** إن اسمَي الملفين في الرابطين دول موجودين حقًا كـ assets
+  على الـ Release عن طريق `gh release view` قبل ما يقبل ملف العلامة ده — لو مش موجودين
+  هيرفضه برسالة توضح إيه الناقص، فتأكد إن الرفع حصل فعلًا الأول.
 - بعد انتهاء **كل** الفيديوهات المطلوبة في المهمة، اكتب:
   `TASK_COMPLETE.json` يحتوي `{"summary": "...", "videos": [...]}`
 
@@ -675,43 +970,39 @@ async function startServer() {
 
 ### مبادئ عامة لحل المشاكل بنفسك — قبل ما تدوّر على حل جاهز
 القائمة اللي تحت مش المفروض تكون المصدر الوحيد لحل المشاكل — هي أمثلة تاريخية
-بس. هتقابل أخطاء جديدة مش موجودة هنا، خصوصًا مع هويات جديدة بمنطق مختلف تمامًا.
-لما يحصل ده، اتبع المبادئ دي بدل ما تفترض إن غياب الخطأ من القائمة يعني إنه
-"مش متوقع" أو تلف حواليه:
+بس. هتقابل أخطاء جديدة مش موجودة هنا، خصوصًا مع هويات جديدة بمنطق ومحتوى مختلف
+تمامًا. لما يحصل ده، اتبع المبادئ دي بدل ما تفترض إن غياب الخطأ من القائمة يعني
+إنه "مش متوقع" أو تلف حواليه:
 
 - **لما أمر يفشل، اقرأ رسالة الخطأ ورقم السطر بالظبط** قبل ما تفترض إنك فاهم
   السبب. `TimeoutError` على `render-runner.js:36` ورقم السطر ده فيه نداء
   `waitForFunction` مختلف عن السطر اللي انت متأكد إنه مظبوط — يبقى فيه نداء
   تاني، مش نفس المشكلة القديمة اللي حليتها قبل كده.
 - **لما تتحقق إن إصلاح معيّن اتطبّق، تأكد إنه اتطبّق في كل الحالات المشابهة**
-  في نفس الملف، مش حالة واحدة بس.
+  في نفس الملف، مش حالة واحدة بس. `grep` بيرجع "لقيت النص ده" — ده مختلف عن
+  "كل مكان المفروض يكون فيه النص ده، فيه فعلًا".
 - **لو بتلاقي نفسك بتعمل نفس التجربة والخطأ (trial-and-error) أكتر من مرتين
-  على نفس المشكلة**، وقف وقارن بنسخة معروفة إنها شغالة بدل ما تكمل تخمين.
+  على نفس المشكلة**، وقف وقارن بنسخة معروفة إنها شغالة (زي الملف الأصلي قبل أي
+  تعديل) بدل ما تكمل تخمين. المقارنة المباشرة أسرع من التخمين المتكرر.
 - **فضّل إعادة كتابة الملف كامل بطريقة نضيفة عن "ترقيع" نسخة انت مش متأكد من
-  حالتها بالظبط**.
-- **لأي مشكلة تخص Mediabunny تحديدًا** (كودك مرفوض، خطأ ترميز غريب، سلوك غير
-  متوقع من `Output`/`CanvasSource`/`Input`)، ارجع لـ
-  `docs/mediabunny-llms-full.txt` بالكامل قبل أي تجربة عشوائية — الإجابة
-  غالبًا موجودة هناك بالحرف.
+  حالتها بالظبط** — خصوصًا لو حصل أكتر من تعديل يدوي على نفس الملف في نفس
+  المهمة وبقيت مش متابع كل تغيير حصل فيه.
 - لو خطأ جديد اتحل بطريقة مفيدة عمومًا (مش خاصة بمحتوى الفيديو نفسه)، سجّله
   لنفسك في تفكيرك كدرس للمهام الجاية في نفس الجلسة، حتى لو مش موثّق هنا.
 
 الأخطاء دي حصلت فعليًا في تشغيلات حقيقية سابقة. اتجنبها من البداية، متعملش نفس التجربة والخطأ تاني:
 
-1. **جلب أي أصل صوتي**: استخدم `fetch()` مباشر جوه `scene.html` (مش `curl` منفصل) على
-   رابط `https://` دايمًا (مش `http://`) — لينك `http://` أو ريدايركت غير متوقَّع ممكن
-   يرجّع صفحة HTML صغيرة (حوالي 166 بايت) باسم الملف الصوتي بدل الصوت الحقيقي. **بعد أي
-   `fetch()` للصوت، تحقق إن حجم الـ `ArrayBuffer` بالكيلوبايتات مش بايتات قليلة**
-   (`console.log(arrayBuffer.byteLength)`) قبل ما تكمل — لو الحجم صغير غير طبيعي (أقل
-   من ~5 كيلوبايت)، الملف على الأغلب صفحة خطأ مش صوت حقيقي، وهتلاقيه واضح كمان في
-   `failed_requests` من سكريبت الرندر لو رجع كود HTTP خطأ.
-   - **لو الهوية بتستخدم صوت آيات قرآنية آية بآية**: المصدر الافتراضي المُختبر عندنا هو
-     `everyayah.com`: `data/{reciter}/{surah:3}{ayah:3}.mp3` (القارئ الافتراضي:
-     `Alafasy_128kbps`) — استخدمه إلا لو المهمة طلبت مصدر تاني صراحة.
+1. **جلب الصوت**: `fetchAndDecodeAudio()` (الطبقة التقنية) بترفض تلقائيًا أي
+   رابط `http://` غير آمن، وبتتحقق إن حجم الـ `ArrayBuffer` مش صغير بشكل غير
+   طبيعي (أقل من ~1 كيلوبايت) قبل ما تحاول تفكّه — الفحصين دول جواها مباشرة
+   دلوقتي (مش مسؤولية كل هوية تكررهم أو تتذكرهم). السبب التاريخي وراء الفحصين
+   دول: لينك `http://` أو ريدايركت غير متوقَّع لـ `everyayah.com` (المصدر
+   الحالي لصوت كل الهويات القرآنية في `identities/`) كان بيرجّع صفحة HTML
+   صغيرة (حوالي 166 بايت) باسم `.mp3` بدل الصوت الحقيقي، فبيبان الخطأ فورًا
+   كرسالة واضحة (`throw`) بدل فشل صامت بعدها بخطوات.
 
-2. **نص القرآن أو أي نص ديني/معلوماتي تاني** (حديث، تفسير...): **ممنوع منعًا باتًا**
-   كتابته من "معرفتك" الداخلية — مصدره لازم يكون نتيجة `curl` فعلية نُفّذت في نفس
-   الجلسة على مصدر موثوق. لو المحتوى آيات قرآنية، استخدم مباشرة من أول مرة:
+2. **نص القرآن (لو محتوى الهوية المستخدمة نص قرآني — كل الهويات الحالية في
+   `identities/` كده)**: استخدم مباشرة من أول مرة:
    `https://api.alquran.cloud/v1/surah/{surah}/editions/quran-uthmani,ar.muyassar`
    (بيرجع الرسم العثماني + التفسير الميسر في نفس الطلب). لا داعي لتجربة editions تانية
    زي `quran-simple-clean` أولًا، ده مضيعة وقت وبيرجع بيانات ناقصة أحيانًا.
@@ -723,30 +1014,29 @@ async function startServer() {
 
 3. **متغيرات البيئة `$RELEASE_TAG` و`$GH_REPO`**: متاحين فعليًا الآن في أي أمر
    `run_terminal` (تم إصلاح باگ سابق كانوا فيه فاضيين). لو لأي سبب طلعوا فاضيين برضه،
-   استخدم `gh repo view` و`gh release list --repo <name>` لمعرفة القيم الصحيحة يدويًا
+   استخدم `gh repo view` و`gh release list --repo <n>` لمعرفة القيم الصحيحة يدويًا
    كخطة بديلة، بدل ما توقف.
 
-4. **تحقق دايمًا من أي ملف نزّلته قبل ما تفترض إنه صح** — سواء صوت أو JSON أو صورة أو
-   فيديو — بأمر بسيط زي `ls -la` أو `head -c 200 <file>`. عادة أرخص بكتير من اكتشاف
-   المشكلة بعد خطوات كتير.
+4. **تحقق دايمًا من أي ملف نزّلته قبل ما تفترض إنه صح** — سواء صوت أو JSON أو صورة —
+   بأمر بسيط زي `ls -la` أو `head -c 200 <file>`. عادة أرخص بكتير من اكتشاف المشكلة
+   بعد خطوات كتير.
 
 5. **ممنوع منعًا باتًا تنفيذ `node agent.js` كأمر terminal من جوه جلستك، بأي args**.
    حصل فعليًا مرة إن الـ Agent نفّذه ظنًا إنه أداة رندر جاهزة، فبدأ جلسة Agent كاملة
-   تانية من الصفر فوق نفس الريبو، اختارت محتوى عشوائي مختلف، وملفات العلامة اللي
+   تانية من الصفر فوق نفس الريبو، اختارت سورة عشوائية مختلفة، وملفات العلامة اللي
    كتبتها خدعت الجلسة الأصلية إنها هي اللي خلصت — والفيديو الأصلي المطلوب اتلغى
    بصمت. الرندر دايمًا سكريبت منفصل تكتبه إنت (`render-runner.js` مثلًا) وتشغّله بـ
    `node render-runner.js`.
 
-6. **فحص النص العربي في `scene.html` بيقبل حالتين بس** (لو الهوية فيها نص عربي أصلًا):
-   إما متتالية 10 حروف عربية متصلة بدون تاجات HTML بينها، أو إجمالي 40 حرف عربي على
-   الأقل في كل الملف (بعد تجاهل التاجات). لو فشل الفحص، الرسالة بترجعلك بالظبط طول
-   أطول متتالية وإجمالي العدد الحاليين — استخدمهم للتشخيص بدل التخمين العشوائي لسبب
-   الفشل. (هوية بصرية بحتة من غير أي نص، زي B-roll خالص، الفحص ده ملوش معنى ليها
-   أصلًا.)
+6. **فحص النص العربي في `scene.html` بيقبل حالتين بس**: إما متتالية 10 حروف عربية
+   متصلة بدون تاجات HTML بينها، أو إجمالي 40 حرف عربي على الأقل في كل الملف (بعد
+   تجاهل التاجات). لو فشل الفحص، الرسالة بترجعلك بالظبط طول أطول متتالية وإجمالي
+   العدد الحاليين — استخدمهم للتشخيص بدل التخمين العشوائي لسبب الفشل.
 
 7. **`scene.html` لازم يتفتح دايمًا عن طريق سيرفر HTTP محلي، مش `file://`** — حتى لو
-   كل الأصول بتتجاب بـ `fetch()` مباشر من روابط خارجية (مفيش تحميل محلي للأصول
-   أصلًا). فتح الملف بـ `file://` بيكسر `fetch()`/`import` وبيخلي أي صورة على الـ
+   كل الأصول بتتجاب بـ `fetch()`/Mediabunny مباشر من روابط خارجية (مفيش تحميل محلي
+   للأصول أصلًا، ده ينطبق على الصوت والصورة وفيديو B-roll الجديد كلهم). فتح الملف
+   بـ `file://` بيكسر `fetch()`/`import` وبيخلي أي صورة أو فريم فيديو على الـ
    canvas "tainted"، فيفشل الرندر بـ `VideoFrames can't be created from tainted
    sources`. سيرفر بسيط جدًا كفاية — راجع "دليل كتابة سكريبت الرندر" في القسم 2
    (نفس السيرفر البسيط بيفتح الصفحة، مفيش داعي لأي حاجة أعقد).
@@ -755,16 +1045,18 @@ async function startServer() {
    — لأن الـ workflow بيثبّت القناة دي بس (`npx playwright install --with-deps chrome`)،
    مش الـ Chromium الافتراضي.
 
-9. **قبل ما تعتبر المهمة خلصت، راجع تطابق أي أصل صوتي مع النص المكتوب** (لو الهوية
-   فيها الاتنين) — لو غيّرت المحتوى، لازم تتأكد إن كل القيم في "منطقة تعديل المحتوى"
-   جوه الهوية اتغيّرت مع بعض بشكل متسق (مفيش أسماء متغيرات موحّدة تتفحص تلقائيًا
-   دلوقتي — راجع الهوية نفسها لتعرف شكلها). الفيديو ممكن يتصدّر بنجاح كامل من غير أي
-   خطأ في اللوج، ومع ذلك يكون فيه نص ومحتوى مختلف عن الصوت المسموع خالص — الرندر مش
-   هيكشفلك الغلطة دي لوحده.
+9. **قبل ما تعتبر المهمة خلصت، تأكد إن كل قيم بيانات المحتوى المكتوبة فعليًا في
+   `scene.html` (زي رقم السورة، القارئ، الأسماء المعروضة، أو أي حقل تاني حسب
+   شكل محتوى الهوية المستخدمة) بتطابق فعليًا المطلوب في المهمة، ومتطابقة مع
+   بعضها البعض** (متبقاش مثلًا سورة نص وصوت سورة تانية خالص). الفيديو ممكن
+   يتصدّر بنجاح كامل من غير أي خطأ في اللوج، ومع ذلك يحمل محتوى غلط تمامًا —
+   الرندر مش هيكشفلك الغلطة دي لوحده أبدًا.
 
-10. **ممنوع تحميل أي أصل بـ `curl` حتى للتجربة/التأكد إن الرابط شغال** — استخدم
-    `curl -sI` (رأس بس) أو جرّب داخل `fetch()` نفسه وقت التشغيل. تحميل أصل كامل
-    محليًا بـ `curl` بيضيع وقت من غير أي فايدة، لأن `scene.html` مش بيقرأ منه أصلًا.
+10. **ممنوع تحميل أي صوت أو صورة أو فيديو B-roll بـ `curl` حتى للتجربة/التأكد إن
+    الرابط شغال** — استخدم `curl -sI` (رأس بس) أو جرّب داخل الأدوات العامة نفسها
+    (`fetchAndDecodeAudio`/`createBrollFrameSampler`) وقت التشغيل. تحميل أي أصل
+    كامل محليًا بـ `curl` بيضيع وقت من غير أي فايدة، لأن `scene.html` مش بيقرأ
+    منه أصلًا.
 
 11. **ممنوع منعًا باتًا "تعيد تسمية" ملف الفيديو الناتج بتغيير الامتداد يدويًا**
     (مثلًا `cp video.webm video.mp4`). امتداد الملف اللي بيرجع في
@@ -784,18 +1076,24 @@ async function startServer() {
 ---
 
 ## القسم 4: قواعد صارمة — غير قابلة للتفاوض
-1. **ممنوع منعًا باتًا** كتابة أي نص ديني/معلوماتي (آية، حديث، تفسير، أو أي نص هوية
-   محتاجاه) من "معرفتك" الداخلية. كل نص في أي `scene.html` لازم مصدره نتيجة `curl`
-   فعلية نُفّذت في نفس الجلسة على مصدر موثوق (مثل `api.alquran.cloud` للآيات).
-2. **لو الفيديو فيه صوت**: كل توقيت (متى يظهر كل مشهد) يُحسب من **المدة الفعلية**
-   لهذا الصوت بعد تحميله وفكّه (`AudioBuffer.duration`)، وليس تخمينًا — القاعدة دي
-   مُفعّلة تلقائيًا في الملحق التقني (`CONFIG.duration = audioBuffer.duration`). لو
-   الفيديو مالوش صوت (B-roll بصري بحت مثلًا)، إنت المسؤول عن تحديد `CONFIG.duration`
-   بنفسك في الهوية بناءً على مصدر واضح (مدة فيديو B-roll المستخدم، أو تصميم مقصود).
-3. **ملف وصف الفيديو الناتج** (اللي بيترفع مع كل فيديو على الـ Release — مختلف
-   تمامًا عن ملف هوية `.md` في `identities/`) يجب أن يحتوي: نوع المحتوى ومعرّفه
-   (اسم السورة/الحديث/إلخ)، مصدر القارئ/الصوت لو موجود، المدة الكلية، وصف مختصر
-   لمكونات المحتوى (نص؟ تفسير؟ B-roll؟)، ورابط الـ GitHub Release الفعلي بعد الرفع.
+1. **ممنوع منعًا باتًا** كتابة أي نص محتوى ديني (آية، تفسير، حديث، أو أي نص
+   مصدره ديني تاني) من "معرفتك" الداخلية. كل نص من النوع ده في أي `scene.html`
+   لازم مصدره نتيجة `curl` فعلية نُفّذت في نفس الجلسة على مصدر موثوق (مثل
+   `api.alquran.cloud`).
+2. **لو الهوية المستخدمة فيها صوت**: كل توقيت مرتبط بالصوت (متى تظهر كل آية،
+   متى تظهر بطاقة التفسير) يُحسب من **المدة الفعلية** للصوت بعد تحميله وفكّه
+   (عن طريق `fetchAndDecodeAudio`/`concatenateAudioBuffers`)، وليس تخمينًا.
+3. **مصدر الصوت (لو الهوية فيها صوت) قرار الهوية نفسها بالكامل** — موثّق في
+   وصف ملف `identities/<اسم>.md` بتاعها (كل الهويات القرآنية الحالية بتستخدم
+   `everyayah.com`: `data/{reciter}/{surah:3}{ayah:3}.mp3`، القارئ الافتراضي
+   `Alafasy_128kbps`، لكن ده مش قيد عام مفروض على أي هوية جديدة). لازم يُجلب
+   وقت التشغيل عن طريق `fetchAndDecodeAudio` (رابط `https://` مباشر، مش تحميل
+   محلي مسبق).
+4. **ملف وصف الفيديو الناتج** (اللي بيترفع مع كل فيديو على الـ Release — مختلف
+   تمامًا عن ملف هوية `.md` في `identities/`) يجب أن يحتوي: وصف حقيقي ومختصر
+   لمحتوى الفيديو الفعلي (حسب نوعه — اسم السورة وعدد الآيات والقارئ لو المحتوى
+   قرآني، أو أي تفاصيل مكافئة تناسب نوع محتوى تاني)، المدة الكلية، هل فيه
+   تفسير/شرح إضافي أم لا، ورابط الـ GitHub Release الفعلي بعد الرفع.
 
 ---
 
@@ -807,6 +1105,6 @@ async function startServer() {
 القسم ده جواه.** لو ملف هوية جديد ملوش قسم "ملاحظات معروفة" لسه، معنى كده مفيش
 ملاحظات معروفة عليه — كمّل عادي بالقواعد العامة في الأقسام اللي فوق بس.
 
-لو مشكلة جديدة اتحلت وهي مرتبطة بتصميم/محتوى/أصول هوية معيّنة بالذات (مش
-بالملحق التقني الثابت أو بـMediabunny نفسها، اللي مكانهم القسم 3)، ضيفها في قسم
-"ملاحظات معروفة" بتاع ملف الهوية نفسه، مش هنا.
+لو مشكلة جديدة اتحلت وهي مرتبطة بتصميم/محتوى هوية معيّنة بالذات (مش بالطبقة
+التقنية الثابتة، اللي مكانها القسم 3)، ضيفها في قسم "ملاحظات معروفة" بتاع ملف
+الهوية نفسه، مش هنا.
