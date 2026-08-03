@@ -7,13 +7,11 @@
 
 - **الأبعاد**: 1080×1920 (Shorts عمودي، 9:16)، 60fps.
 - **حالة الاستخدام**: تلاوة سورة كاملة أو مقطع منها، من غير تفسير.
-- **بيانات المحتوى**: مفيش أي متغيرات هنا خالص (راجع "لا متغيرات لبيانات
-  المحتوى" بالقسم 1 من `AGENTS.md`). كل رابط صوت وكل نص آية بيتكتبوا حرفيين
-  مباشرة جوه `buildParsedScenes()`، سطر صريح واحد لكل آية — الكود تحت فيه
-  مثال حقيقي كامل (سورة الإخلاص) يوضح النمط بالظبط: لما تستخدم الهوية دي في
-  مهمة حقيقية، بتعيد كتابة نفس الدالة بروابط ونصوص الآيات الحقيقية للمهمة،
-  بنفس الشكل والنمط بالظبط (رابط `everyayah.com` كامل حرفي لكل آية، ونص كل
-  آية حرفي في مكان استخدامه). الاستثناء الوحيد هو `OUTPUT_FILENAME`.
+- **شكل بيانات المحتوى** (`SURAH_NUMBER`, `RECITER_ID`, `RECITER_DISPLAY_NAME`,
+  `SURAH_DISPLAY_NAME`, `OUTPUT_FILENAME`, `SURAH_VERSES`): كل عنصر في
+  `SURAH_VERSES` فيه `text` بس، مفيش حاجة إضافية مطلوبة (لا تفسير ولا غيره).
+  الصوت بيتجاب من `everyayah.com` آية بآية داخل `prepareIdentity()` بناءً على
+  `SURAH_NUMBER`/`RECITER_ID` وطول `SURAH_VERSES` (راجع الكود تحت).
 
 ## روابط الخطوط
 ```html
@@ -92,26 +90,43 @@ canvas {
 ```
 
 ## كود JS — طبقة الهوية بالكامل (self-contained)
-افهم الكتلة دي بالكامل قبل كتابتها في "طبقة الهوية" جوه `scene.html` — دي
-Blueprint هندسي يُستوعب أولاً، مش نص يُنسخ ويُلصق من غير فهم. المثال تحت
-(سورة الإخلاص) يوضح **النمط** بالظبط: روابط صوت حرفية كاملة سطر بسطر بلا حلقة
-ولا متغيرات وسيطة، ونص كل آية حرفي في مكان استخدامه. لما تستخدم الهوية دي في
-مهمة حقيقية، اكتب نفس الدالتين من جديد بروابط ونصوص المهمة الفعلية (نتيجة
-`curl` حقيقية)، بنفس النمط والشكل بالظبط — مش استبدال قيم متغيرات، لأنه مفيش
-متغيرات بيانات محتوى أصلًا.
+الكتلة دي **تنفيذ مرجعي** — افهمها كويس (الألوان، التخطيط، الحركة، منطق جلب
+الصوت)، وبعدين اكتب نسختك الخاصة بيك في "طبقة الهوية" جوه `scene.html`: نفس
+السلوك، لكن بقيم بيانات المحتوى الحقيقية للمهمة الحالية (نتيجة `curl` فعلية)
+وروابط صوت محلولة حرفيًا (راجع "قيم المحتوى تُكتب حرفية دايمًا" في `AGENTS.md`)،
+مش نسخ للكتلة زي ما هي.
 
 ```js
 // ================================================================
-// ⚙️↔🎨 CONFIG وOUTPUT_FILENAME — الاسمين ثابتين، الطبقة التقنية بتقراهم
-// بعد ما buildParsedScenes() يخلص. OUTPUT_FILENAME هو الاستثناء الوحيد
-// المسموح كمتغيّر محتوى (واجهة اتفاق تقنية، مش بيانات محتوى حقيقية).
+// 📋 بيانات المحتوى — بالقيم دي إنت (الوكيل) اللي بتكتبها/تعدّلها لكل
+// مهمة (نتيجة curl فعلية، راجع القسم 4 في AGENTS.md). القيم تحت مجرد
+// مثال (سورة الإخلاص) يوضح الشكل المطلوب بالظبط — الأسماء والبنية ثابتة
+// لهذه الهوية، القيم بس بتتغيّر.
 // ================================================================
-let CONFIG = { fps: 60, width: 1080, height: 1920, duration: 0 }; // duration بتتحدد فعليًا جوه buildParsedScenes()
+const SURAH_NUMBER = '112';
+const RECITER_ID = 'Alafasy_128kbps';
+const RECITER_DISPLAY_NAME = 'الشيخ مشاري راشد العفاسي';
+const SURAH_DISPLAY_NAME = 'سُورَةُ الْإِخْلَاصِ';
 const OUTPUT_FILENAME = 'Quran_Shorts_Al_Ikhlas';
+const SURAH_VERSES = [
+    { text: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝' },
+    { text: 'اللَّهُ الصَّمَدُ ۝' },
+    { text: 'لَمْ يَلِدْ وَلَمْ يُولَدْ ۝' },
+    { text: 'وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ۝' }
+];
 
 // ================================================================
-// 🎨 تصميم الهوية — ثوابت وأدوات رسم داخلية (ستايل، مش بيانات محتوى)
+// ⚙️↔🎨 متغيرات العقد مع الطبقة التقنية — الأسماء دي ثابتة، الطبقة
+// التقنية بتقرأها بعد ما prepareIdentity() يخلص
 // ================================================================
+let CONFIG = { fps: 60, width: 1080, height: 1920, duration: 0 }; // duration بتتحدد فعليًا جوه prepareIdentity()
+let audioBuffer = null; // بيتملى جوه prepareIdentity()
+
+// ================================================================
+// 🎨 تصميم الهوية — ثوابت وأدوات رسم داخلية
+// ================================================================
+let parsedScenes = []; // حالة داخلية للهوية، بتتملى جوه prepareIdentity()
+
 const QURAN_FONT = "'Amiri', serif";
 const HEADER_FONT = "'Reem Kufi', sans-serif";
 
@@ -196,60 +211,37 @@ function drawQuranVerseScene(scene, sceneProgress) {
     ctx.restore();
 }
 
-// أداة تصميم مساعدة (منطق، مش بيانات محتوى): بتحسب حجم خط الآية حسب طولها
-// وترجع تخطيطها جاهز. النص نفسه بيتبعت ليها حرفيًا من مكان الاستدعاء —
-// الدالة دي ماعندهاش أي فكرة عن "آيات السورة"، هي منطق تصميم عام بس.
-function layoutVerse(literalText) {
-    const size = literalText.length > 40 ? 68 : 78;
-    const font = `700 ${size}px ${QURAN_FONT}`;
-    // مركز Y = 960 (نص الشاشة بالظبط) — مفيش بطاقة تفسير تاخد مساحة تحت
-    const words = layoutArabicParagraph(literalText, font, 920, 20, size * 1.5, 960);
-    return { font, words };
-}
-
 // ================================================================
 // 🎨 الدالتين الإلزاميتين في العقد
 // ================================================================
-async function buildParsedScenes() {
-    logToConsole('جاري تحميل صوت آيات سُورَةُ الْإِخْلَاصِ آية بآية من EveryAyah.com (الشيخ مشاري راشد العفاسي)...');
+async function prepareIdentity() {
+    logToConsole(`جاري تحميل صوت آيات ${SURAH_DISPLAY_NAME} آية بآية من EveryAyah.com (${RECITER_DISPLAY_NAME})...`);
 
-    // كل رابط حرفي كامل، سطر صريح واحد لكل آية — من غير حلقة ولا متغيرات
-    // بتبني الرابط من أجزاء (راجع "لا متغيرات لبيانات المحتوى" بالقسم 1).
-    // التسامح مع فشل تحميل آية واحدة (try/catch منفصل) من غير ما يوقف الباقي.
-    const buffers = [];
-    try {
-        buffers.push(await fetchAndDecodeAudio('https://www.everyayah.com/data/Alafasy_128kbps/112001.mp3'));
-        logToConsole('تم تحميل الآية 1 بنجاح ✓');
-    } catch (err) { logToConsole(`تنبيه تحميل الآية 1: ${err.message}`, 'warn'); }
-    try {
-        buffers.push(await fetchAndDecodeAudio('https://www.everyayah.com/data/Alafasy_128kbps/112002.mp3'));
-        logToConsole('تم تحميل الآية 2 بنجاح ✓');
-    } catch (err) { logToConsole(`تنبيه تحميل الآية 2: ${err.message}`, 'warn'); }
-    try {
-        buffers.push(await fetchAndDecodeAudio('https://www.everyayah.com/data/Alafasy_128kbps/112003.mp3'));
-        logToConsole('تم تحميل الآية 3 بنجاح ✓');
-    } catch (err) { logToConsole(`تنبيه تحميل الآية 3: ${err.message}`, 'warn'); }
-    try {
-        buffers.push(await fetchAndDecodeAudio('https://www.everyayah.com/data/Alafasy_128kbps/112004.mp3'));
-        logToConsole('تم تحميل الآية 4 بنجاح ✓');
-    } catch (err) { logToConsole(`تنبيه تحميل الآية 4: ${err.message}`, 'warn'); }
+    const ayahBuffers = [];
+    for (let i = 1; i <= SURAH_VERSES.length; i++) {
+        const ayahNum = String(i).padStart(3, '0');
+        const url = `https://www.everyayah.com/data/${RECITER_ID}/${SURAH_NUMBER}${ayahNum}.mp3`;
+        try {
+            ayahBuffers.push(await fetchAndDecodeAudio(url));
+            logToConsole(`تم تحميل الآية ${i} بنجاح ✓`);
+        } catch (err) {
+            logToConsole(`تنبيه تحميل الآية ${i}: ${err.message}`, 'warn');
+        }
+    }
+    if (ayahBuffers.length === 0) throw new Error("تعذر جلب أي ملف صوت من EveryAyah");
 
-    if (buffers.length === 0) throw new Error('تعذر جلب أي ملف صوت من EveryAyah');
-
-    // بيعيّن قيمة لـ audioBuffer/CONFIG.duration المتعرّفين في الطبقة التقنية
-    // — ما بيعيدش تعريفهم بـ let/const (راجع التحذير في القسم 1 من AGENTS.md)
-    const { buffer, segments } = concatenateAudioBuffers(buffers);
+    const { buffer, segments } = concatenateAudioBuffers(ayahBuffers);
     audioBuffer = buffer;
-    CONFIG.duration = buffer.duration;
+    CONFIG.duration = audioBuffer.duration;
 
-    // كل عنصر صريح ومنفصل — نص الآية حرفي مكتوب مباشرة هنا، مفيش مصفوفة
-    // نصوص مشتركة بيتلف عليها بحلقة
-    parsedScenes = [
-        { start: segments[0].start, end: segments[0].end, ...layoutVerse('قُلْ هُوَ اللَّهُ أَحَدٌ ۝') },
-        { start: segments[1].start, end: segments[1].end, ...layoutVerse('اللَّهُ الصَّمَدُ ۝') },
-        { start: segments[2].start, end: segments[2].end, ...layoutVerse('لَمْ يَلِدْ وَلَمْ يُولَدْ ۝') },
-        { start: segments[3].start, end: segments[3].end, ...layoutVerse('وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ۝') }
-    ];
+    const cues = segments.map((seg, i) => ({ id: i + 1, ...seg, ...SURAH_VERSES[i] }));
+    parsedScenes = cues.map(cue => {
+        const verseFontSize = cue.text.length > 40 ? 68 : 78;
+        const verseFont = `700 ${verseFontSize}px ${QURAN_FONT}`;
+        // مركز Y = 960 (نص الشاشة بالظبط) — مفيش بطاقة تفسير تاخد مساحة تحت
+        const words = layoutArabicParagraph(cue.text, verseFont, 920, 20, verseFontSize * 1.5, 960);
+        return { ...cue, font: verseFont, fontSize: verseFontSize, words };
+    });
 
     logToConsole(`تم دمج تلاوة الآيات بنجاح! مدة الشورتس: ${CONFIG.duration.toFixed(2)} ثانية ✓`);
 }
@@ -262,29 +254,34 @@ async function drawSceneAtTime(time) { // async دايمًا (راجع "عقد �
     const scene = parsedScenes.find(s => time >= s.start && time <= s.end) || parsedScenes[parsedScenes.length - 1];
     const progress = clamp01((time - scene.start) / (scene.end - scene.start));
 
-    // اسم السورة حرفي مباشر هنا — لو المهمة فيها سور متعددة، اكتب الاسم
-    // الحرفي المناسب لكل مجموعة مشاهد بدل سطر واحد ثابت زي المثال ده
-    drawSurahHeader('سُورَةُ الْإِخْلَاصِ');
+    drawSurahHeader(scene.surah || SURAH_DISPLAY_NAME);
     drawQuranVerseScene(scene, progress);
 }
 ```
 
 ## ملاحظات معروفة
+- **جلب نص الآيات** (لملء `SURAH_VERSES` بالقيم الحقيقية وقت كتابة المهمة،
+  عن طريق `curl` خارج `scene.html`): استخدم مباشرة من أول مرة
+  `https://api.alquran.cloud/v1/surah/{surah}/editions/quran-uthmani`
+  (بيرجع الرسم العثماني). **شكل الـ JSON الراجع بالظبط** (لتفادي `TypeError`
+  بسبب افتراض شكل غلط): `response.data` فيها `ayahs` (List) — الوصول الصح
+  `data['ayahs']`، مش `data['editions'][i]['ayahs']`.
+- **تذكير مهم**: لما تكتب `prepareIdentity()` الفعلية في `scene.html`
+  الحقيقي، اكتب كل رابط `everyayah.com` بقيمته الحرفية الكاملة لكل آية على
+  حدة (مش بـ `${RECITER_ID}`/`${SURAH_NUMBER}` كمتغيرات محتوى) — الكود تحت
+  نمط مرجعي يوضح الفكرة بس، راجع "قيم المحتوى تُكتب حرفية دايمًا" في
+  `AGENTS.md`.
 - **نفس دوال `drawGlobalBackground`/`drawSurahHeader`/`drawQuranVerseScene`
-  الموجودة في `brown-style.md` منطقيًا** — الفرق الوحيد إن التخطيط هنا بيحط
-  مركز النص على `960` (نص الشاشة الفعلي) بدل `720`، ومفيش
-  `drawEnhancedTafseerPanel` ولا أي بطاقة تفسير خالص. لو محتاج تحويل فيديو من
+  الموجودة في `brown-style.md` حرفيًا** — الفرق الوحيد إن `prepareIdentity()`
+  هنا بيحط مركز النص على `960` (نص الشاشة الفعلي) بدل `720`، ومفيش
+  `drawEnhancedTafseerPanel` ولا `tafseerWords` خالص. لو محتاج تحويل فيديو من
   الهوية دي للهوية التانية (تفسير ↔ من غير تفسير)، الفرق محصور في النقطتين
   دول بس.
 - **لو مهمة طلبت "بنفس هوية Quran.md بس ضيف تفسير"**: أسهل حل عملي إنك تستخدم
   `brown-style.md` مباشرة بدل ما تضيف منطق تفسير هنا من الصفر — هي نفس اللوحة
   البصرية أصلًا ومعمول فيها بطاقة التفسير جاهزة ومختبرة.
-- **مفيش أي متغيرات بيانات محتوى في الملف ده خالص** (لا `SURAH_NUMBER` ولا
-  `RECITER_ID` ولا حتى مصفوفة نصوص مشتركة) — الروابط والنصوص كلها حرفية مباشرة
-  جوه `buildParsedScenes()`. `layoutVerse()` أداة تصميم عامة بس (بتحسب حجم
-  الخط حسب طول أي نص تُبعته ليها)، مش مخزن بيانات — النص نفسه بيتحدد في مكان
-  النداء عليها. الاستثناء الوحيد هو `OUTPUT_FILENAME`.
-- **الدالة الإلزامية الأولى اسمها `buildParsedScenes()`** (مش `prepareIdentity()`
-  زي إصدارات سابقة من هذا الملف) — الاسم اتغيّر ليطابق عقد `AGENTS.md` الحالي،
-  والسلوك الفعلي (جلب الصوت آية بآية، التسامح مع فشل آية واحدة من غير ما يوقف
-  الباقي، حساب المدة من الصوت الحقيقي) لم يتغيّر.
+- **جلب الصوت وبناء بيانات المشاهد دلوقتي مدموجين في `prepareIdentity()` واحدة**
+  (بدل ما كانا مقسّمين بين تحميل تلقائي في الطبقة التقنية ودالة
+  `buildParsedScenes` منفصلة) — لو بتقارن بنسخة قديمة من هذا الملف شفت فيها
+  الاسمين دول، هما بقوا دالة واحدة هنا، والسلوك الفعلي (بما فيه التسامح مع فشل
+  تحميل آية واحدة بدون ما يوقف الباقي) لم يتغيّر.
