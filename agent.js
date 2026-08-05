@@ -35,10 +35,14 @@ function log(msg) {
 // ============================================================================
 // وضع الـ Agent الرئيسي
 // ============================================================================
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// مفتاح واحد أو أكتر (مفصولين بفاصلة) — GEMINI_API_KEYS الجديد له الأولوية،
+// وGEMINI_API_KEY القديم فاضل شغال لو حد بس متاح (توافق خلفي).
+const GEMINI_API_KEYS = (process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || '')
+  .split(',').map((s) => s.trim()).filter(Boolean);
+let currentKeyIndex = 0;
 // سلسلة نماذج احتياطية — التبديل تلقائي للي بعده لما نستنفد محاولات إعادة الاتصال
 // على النموذج الحالي. مرتبة من الأعلى قدرة للأكرم في حدود الخطة المجانية (RPM).
-const MODEL_CHAIN = (process.env.GEMINI_MODEL_CHAIN || 'gemini-3.5-flash-lite,gemini-3.0-flash')
+const MODEL_CHAIN = (process.env.GEMINI_MODEL_CHAIN || 'gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.0-flash')
   .split(',').map((s) => s.trim()).filter(Boolean);
 let currentModelIndex = 0;
 
@@ -241,9 +245,10 @@ function parseRetryDelaySeconds(errorBody) {
   }
 }
 
-async function callGemini(contents, systemInstruction, attempt = 1) {
+async function callGemini(contents, systemInstruction, attempt = 1, keyRotationsTried = 0) {
   const MAX_ATTEMPTS_PER_MODEL = 3;
   const model = MODEL_CHAIN[currentModelIndex];
+  const apiKey = GEMINI_API_KEYS[currentKeyIndex];
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const body = {
     contents,
@@ -255,7 +260,7 @@ async function callGemini(contents, systemInstruction, attempt = 1) {
   try {
     res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify(body),
     });
     data = await res.json();
@@ -264,27 +269,40 @@ async function callGemini(contents, systemInstruction, attempt = 1) {
       const waitSeconds = Math.min(60, 5 * Math.pow(2, attempt));
       log(`خطأ شبكة عند الاتصال بـ Gemini (${networkErr.message}). هستنى ${waitSeconds}s وأعيد المحاولة (${attempt}/${MAX_ATTEMPTS_PER_MODEL})...`);
       await new Promise((r) => setTimeout(r, waitSeconds * 1000));
-      return callGemini(contents, systemInstruction, attempt + 1);
+      return callGemini(contents, systemInstruction, attempt + 1, keyRotationsTried);
     }
     throw new Error(`فشل الاتصال بـ Gemini بعد عدة محاولات: ${networkErr.message}`);
   }
 
   if (!res.ok) {
-    const isTransient = res.status === 429 || (res.status >= 500 && res.status < 600);
+    const isRateLimit = res.status === 429;
+    const isTransient = isRateLimit || (res.status >= 500 && res.status < 600);
     if (isTransient) {
+      // على الليميت بالتحديد (429): بدّل لمفتاح API تاني فورًا من غير أي
+      // انتظار، لو فيه مفتاح لسه ما جُرّب في الدورة دي — أسرع حل من الانتظار،
+      // لأن مفتاح تاني عنده حصة (quota) منفصلة تمامًا. أخطاء السيرفر (5xx)
+      // مفتاح تاني مش هيصلحها، فبتفضل على منطق الانتظار العادي.
+      if (isRateLimit && keyRotationsTried < GEMINI_API_KEYS.length - 1) {
+        currentKeyIndex = (currentKeyIndex + 1) % GEMINI_API_KEYS.length;
+        log(`خطأ ليميت (429) على ${model}. بدّلت فورًا لمفتاح Gemini API رقم ${currentKeyIndex + 1}/${GEMINI_API_KEYS.length} من غير انتظار...`);
+        return callGemini(contents, systemInstruction, attempt, keyRotationsTried + 1);
+      }
+
       if (attempt < MAX_ATTEMPTS_PER_MODEL) {
         const serverDelay = parseRetryDelaySeconds(data);
         const waitSeconds = serverDelay != null ? serverDelay + 1 : Math.min(60, 5 * Math.pow(2, attempt));
         log(`خطأ مؤقت (${res.status}) على ${model}. هستنى ${waitSeconds.toFixed(1)}s وأعيد المحاولة (${attempt}/${MAX_ATTEMPTS_PER_MODEL})...`);
         await new Promise((r) => setTimeout(r, waitSeconds * 1000));
-        return callGemini(contents, systemInstruction, attempt + 1);
+        // نصفّر عداد تبديل المفاتيح مع كل دورة انتظار جديدة، عشان لو حصل 429
+        // تاني بعد الانتظار نقدر نلف على كل المفاتيح فورًا من جديد قبل ما ننتظر تاني
+        return callGemini(contents, systemInstruction, attempt + 1, 0);
       }
       if (currentModelIndex < MODEL_CHAIN.length - 1) {
         currentModelIndex++;
         log(`استنفدنا محاولات ${model} (${res.status}). التبديل للنموذج الاحتياطي: ${MODEL_CHAIN[currentModelIndex]}`);
-        return callGemini(contents, systemInstruction, 1);
+        return callGemini(contents, systemInstruction, 1, 0);
       }
-      throw new Error(`استنفدنا كل النماذج في السلسلة (${MODEL_CHAIN.join(', ')}) بسبب أخطاء متكررة (${res.status}).`);
+      throw new Error(`استنفدنا كل النماذج في السلسلة (${MODEL_CHAIN.join(', ')}) وكل مفاتيح الـ API بسبب أخطاء متكررة (${res.status}).`);
     }
     throw new Error(`Gemini API error (${res.status}): ${JSON.stringify(data).slice(0, 500)}`);
   }
@@ -374,7 +392,7 @@ async function runAgentLoop() {
 
     if (functionCalls.length === 0) {
       const textReply = parts.map((p) => p.text || '').join(' ');
-      log('رد نصي (خطة/تفكير/مراجعة): ' + textReply.slice(0, 500));
+      log('رد نصي (خطة/تفكير/مراجعة): ' + textReply);
       hasPlanned = true;
       contents.push({ role: 'user', parts: [{ text: 'تمام. كمّل بأوامر run_terminal الفعلية دلوقتي.' }] });
       continue;
@@ -382,7 +400,7 @@ async function runAgentLoop() {
 
     const functionResponses = [];
     for (const fc of functionCalls) {
-      log(`run_terminal: ${JSON.stringify(fc.args).slice(0, 300)}`);
+      log(`run_terminal: ${JSON.stringify(fc.args)}`);
 
       let result;
       if (!hasPlanned) {
@@ -391,7 +409,7 @@ async function runAgentLoop() {
         result = await runTerminal(fc.args || {});
       }
 
-      log(`نتيجة: ${JSON.stringify(result).slice(0, 400)}`);
+      log(`نتيجة: ${JSON.stringify(result)}`);
       functionResponses.push({ functionResponse: { name: fc.name, response: result, id: fc.id } });
     }
     // بعد كل دورة: تحقق فعلي من أي ملف علامة فيديو جديد (أصوله موجودة على
@@ -446,8 +464,8 @@ function uploadFinalArtifacts({ includeTaskComplete }) {
 }
 
 async function main() {
-  if (!GEMINI_API_KEY) {
-    console.error('GEMINI_API_KEY غير موجود في متغيرات البيئة. أوقف التنفيذ.');
+  if (GEMINI_API_KEYS.length === 0) {
+    console.error('GEMINI_API_KEY أو GEMINI_API_KEYS غير موجودين في متغيرات البيئة. أوقف التنفيذ.');
     process.exit(1);
   }
 
