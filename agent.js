@@ -7,9 +7,11 @@
 // مفيهوش أي منطق محتوى أو رندر خالص — بس المحرك اللي بيشغّل الأداة الوحيدة.
 //
 // معمارية التفكير: Plan-and-Solve (خطة نصية كاملة قبل أول أمر) + Reflexion
-// (مراجعة نصية إلزامية بعد كل فيديو — دي بقت قاعدة سلوكية مكتوبة في AGENTS.md
-// والـ Agent نفسه مسؤول عن الالتزام بيها؛ agent.js بقى بس بيتأكد من وجود
-// TASK_COMPLETE.json عشان يعرف يوقف، من غير أي مراقبة أو فرض تاني من الكود).
+// (مراجعة نصية إلزامية بعد كل فيديو — دي قاعدة سلوكية مكتوبة في AGENTS.md
+// والـ Agent نفسه مسؤول عن الالتزام بيها). agent.js بيتحقق فعليًا (مش بس
+// بيفترض) إن كل ملف علامة فيديو، وTASK_COMPLETE.json نفسه في الآخر، بيشيروا
+// لأصول موجودة حقًا على الـ Release عن طريق gh release view — ويرفض أي ملف
+// مش مطابق برسالة توضح الناقص بالتحديد، مطابق لما هو موثّق في AGENTS.md.
 // ============================================================================
 
 const fs = require('fs');
@@ -32,7 +34,7 @@ const MODEL_CHAIN = (process.env.GEMINI_MODEL_CHAIN || 'gemini-3.5-flash-lite,ge
   .split(',').map((s) => s.trim()).filter(Boolean);
 let currentModelIndex = 0;
 
-const TASK_JSON = process.env.TASK_JSON || 'اعمل فيديو سورة الإخلاص كاملة، بدون تفسير، أفقي.';
+const TASK_JSON = process.env.TASK_JSON || 'اعمل فيديو شورتس عمودي واحد — اختر ملف هوية مناسب من identities/ وحدد بنفسك محتوى يناسبها.';
 const CALLBACK_URL = process.env.CALLBACK_URL || ''; // هيتحدد لاحقًا، اختياري دلوقتي
 const GH_REPO = process.env.GITHUB_REPOSITORY || '';
 const RELEASE_TAG = `render-${process.env.GITHUB_RUN_NUMBER || Date.now()}`;
@@ -97,13 +99,123 @@ const functionDeclarations = [
 ];
 
 // ---------------------------------------------------------------------------
-// فحص بسيط جدًا: هل ملف إنهاء المهمة موجود؟ كل حاجة تانية (التحقق من صحة
-// scene.html، تتبّع كل فيديو خلص، الالتزام بالـ Reflexion) بقت مسؤولية
-// الـ Agent نفسه بالكامل، حسب التعليمات المكتوبة في AGENTS.md — مفيش أي
-// كود هنا بيراقبها أو بيفرضها.
+// تحقق حقيقي من أصول الـ Release — مطابق لما هو موثّق في AGENTS.md: أي ملف
+// علامة (فيديو أو TASK_COMPLETE) لازم يشير لأصول موجودة فعليًا على الـ Release
+// قبل ما يُقبل، مش بس موجود كملف JSON على القرص. باقي التحقق (سلامة محتوى
+// scene.html نفسه، الالتزام الفعلي بالـ Reflexion) يفضل مسؤولية الـ Agent
+// حسب AGENTS.md — الكود هنا بيتحقق من "الأصول موجودة"، مش من "الكود صحيح".
 // ---------------------------------------------------------------------------
-function isTaskComplete() {
-  return fs.existsSync(path.join(WORK_DIR, TASK_COMPLETE_MARKER));
+const VIDEO_MARKER_REGEX = /^video_.+_done\.json$/;
+const verifiedVideoMarkers = new Set();
+
+function listVideoMarkerFiles() {
+  return fs.readdirSync(WORK_DIR).filter((f) => VIDEO_MARKER_REGEX.test(f));
+}
+
+function getReleaseAssetNames() {
+  const output = execSync(
+    `gh release view ${RELEASE_TAG} --repo ${GH_REPO} --json assets -q ".assets[].name"`,
+    { env: process.env }
+  ).toString();
+  return output.split('\n').map((s) => s.trim()).filter(Boolean);
+}
+
+function urlToAssetName(url) {
+  try {
+    return decodeURIComponent(new URL(url).pathname.split('/').pop() || '');
+  } catch (e) {
+    return '';
+  }
+}
+
+// بيتحقق إن التلات روابط المطلوبة (فيديو/وصف/scene.html) بتشير لأصول موجودة
+// فعليًا على الـ Release دلوقتي — مش بس بيقرا الأسماء من ملف JSON على القرص.
+function verifyReferencedAssets(entry) {
+  const requiredFields = ['release_video_url', 'release_md_url', 'release_scene_html_url'];
+  const missingFields = requiredFields.filter((f) => !entry || !entry[f]);
+  if (missingFields.length) {
+    return { ok: false, problems: [`حقول ناقصة: ${missingFields.join(', ')}`] };
+  }
+
+  let assetNames;
+  try {
+    assetNames = getReleaseAssetNames();
+  } catch (e) {
+    return { ok: false, problems: [`فشل الاستعلام عن أصول الـ Release عبر gh release view: ${e.message}`] };
+  }
+
+  const problems = [];
+  for (const field of requiredFields) {
+    const expectedName = urlToAssetName(entry[field]);
+    if (!expectedName || !assetNames.includes(expectedName)) {
+      problems.push(`${field} → "${expectedName || entry[field]}" مش موجود كـ asset حقيقي على الـ Release`);
+    }
+  }
+  return problems.length ? { ok: false, problems } : { ok: true };
+}
+
+// فحص أي ملف علامة فيديو جديد ظهر بعد آخر دورة — بيرفضه فعليًا (وبيحذفه) لو
+// الأصول المُشار لها غير موجودة، برسالة توضح بالتحديد الناقص.
+function verifyNewVideoMarkers() {
+  const rejectionMessages = [];
+  for (const markerFile of listVideoMarkerFiles()) {
+    if (verifiedVideoMarkers.has(markerFile)) continue;
+
+    let data;
+    try {
+      data = JSON.parse(fs.readFileSync(path.join(WORK_DIR, markerFile), 'utf-8'));
+    } catch (e) {
+      fs.unlinkSync(path.join(WORK_DIR, markerFile));
+      rejectionMessages.push(`ملف العلامة ${markerFile} فيه JSON غير صالح (${e.message}) — تم رفضه وحذفه، اكتبه تاني صح.`);
+      continue;
+    }
+
+    const verdict = verifyReferencedAssets(data);
+    if (verdict.ok) {
+      verifiedVideoMarkers.add(markerFile);
+      log(`✅ تحقق ناجح من ملف العلامة: ${markerFile}`);
+    } else {
+      fs.unlinkSync(path.join(WORK_DIR, markerFile));
+      log(`❌ رفض ملف العلامة ${markerFile}: ${verdict.problems.join(' | ')}`);
+      rejectionMessages.push(
+        `ملف العلامة ${markerFile} مرفوض:\n- ${verdict.problems.join('\n- ')}\nصحّح الرفع الفعلي على الـ Release وأعد كتابة الملف.`
+      );
+    }
+  }
+  return rejectionMessages;
+}
+
+// فحص نهاية المهمة: TASK_COMPLETE.json لازم يتحقق منه بنفس الصرامة — كل
+// فيديو جوه مصفوفة videos لازم أصوله موجودة فعليًا، وإلا يُرفض الملف بالكامل
+// (وبيتم حذفه) عشان الحلقة تفضل شغالة لحد ما يتصحح.
+function checkTaskCompletion() {
+  if (!fs.existsSync(path.join(WORK_DIR, TASK_COMPLETE_MARKER))) return { done: false };
+
+  let payload;
+  try {
+    payload = JSON.parse(fs.readFileSync(path.join(WORK_DIR, TASK_COMPLETE_MARKER), 'utf-8'));
+  } catch (e) {
+    fs.unlinkSync(path.join(WORK_DIR, TASK_COMPLETE_MARKER));
+    return { done: false, rejection: `TASK_COMPLETE.json فيه JSON غير صالح (${e.message}) — تم رفضه وحذفه، اكتبه تاني صح.` };
+  }
+
+  if (!Array.isArray(payload.videos) || payload.videos.length === 0) {
+    fs.unlinkSync(path.join(WORK_DIR, TASK_COMPLETE_MARKER));
+    return { done: false, rejection: 'TASK_COMPLETE.json مرفوض: حقل "videos" لازم يكون مصفوفة فيها فيديو واحد على الأقل.' };
+  }
+
+  const problems = [];
+  payload.videos.forEach((entry, i) => {
+    const verdict = verifyReferencedAssets(entry);
+    if (!verdict.ok) problems.push(`videos[${i}] (${entry && entry.identifier}): ${verdict.problems.join(' | ')}`);
+  });
+
+  if (problems.length) {
+    fs.unlinkSync(path.join(WORK_DIR, TASK_COMPLETE_MARKER));
+    return { done: false, rejection: `TASK_COMPLETE.json مرفوض:\n- ${problems.join('\n- ')}\nصحّح الأصول الناقصة على الـ Release وأعد كتابة الملف.` };
+  }
+
+  return { done: true, payload };
 }
 
 // ---------------------------------------------------------------------------
@@ -173,45 +285,55 @@ async function callGemini(contents, systemInstruction, attempt = 1) {
 
 function buildSystemPrompt(agentsMd) {
   return `
-انت أوفق AI Agent — عقل مستقل بيبني فيديوهات قرآنية كاملة من الصفر.
+انت أوفق AI Agent — عقل مستقل بيبني فيديوهات شورتس كاملة من الصفر، في أي مجال
+محتوى. المجال وشكل المحتوى وطريقة جلب أصوله بالكامل قرار ملف الهوية اللي هتستخدمه
+من identities/ — مفيش مجال افتراضي مفروض عليك.
 
-# هويتك الثابتة والعقد التقني الإلزامي (التزم بيه حرفيًا)
+# هويتك الثابتة والعقد التقني الإلزامي (التزم بيه حرفيًا، بما فيه كود الرندر بالكامل)
 ${agentsMd}
 
 # الأداة الوحيدة المتاحة لك
 run_terminal(command) — ده كل اللي عندك. مفيش أي أداة تانية، ومفيش أي دالة رندر جاهزة.
 من خلاله لازم:
-- تجيب أي نص (آية/تفسير) عن طريق: curl -s "<url>"
-- تحمّل الصوت والصور عن طريق: curl -s -o assets/xxx "<url>"
+- تجيب أي نص/بيانات محتوى عن طريق: curl -s "<url>"
+- **الأصول (صوت/صورة/فيديو)**: تُجاب دايمًا وقت التشغيل جوه المتصفح، بالطريقة اللي
+  ملف الهوية حددها — ممنوع تحميلها محليًا بـ curl والإشارة لها بمسار محلي. القاعدة
+  الكاملة وأمثلتها موجودة فوق في AGENTS.md.
 - تكتب أي ملف (scene.html، سكريبت الرندر، ملف .md) عن طريق: cat > path/to/file << 'EOF' ... EOF
-- **الرندر نفسه لازم تكتبه إنت بالكامل**: اكتب سكريبت Node.js بيستخدم Playwright
-  (الوصفة الكاملة والمُختبَرة موجودة في قسم "دليل كتابة سكريبت الرندر" في AGENTS.md فوق —
-  انسخها واستخدمها زي ما هي)، احفظه بأمر terminal، وشغّله بعد كده عن طريق terminal تاني.
+- **الرندر نفسه لازم تكتبه إنت بالكامل**: اكتب \`render-runner.js\` بالكود المرجعي
+  المُختبَر الموجود فوق في AGENTS.md — انسخه واستخدمه زي ما هو، احفظه بأمر terminal،
+  وشغّله بعد كده بأمر terminal تاني.
 - ترفع أي ملف على الـ Release عن طريق: gh release upload $RELEASE_TAG <file> --repo $GH_REPO
 
 **مهم جدًا**: لو أي أمر terminal فشل (زي مشكلة quoting في heredoc)، **صحّح نفس المشكلة
 بدقة وأعد المحاولة** — ممنوع منعًا باتًا تستبدل المحتوى بنسخة مبسّطة أو منقوصة عشان
-"تتجنب" الخطأ. **مفيش أي فحص سلامة تلقائي بالكود هيرفض المشهد بدالك** — إنت المسؤول
-الوحيد عن التأكد بنفسك إن scene.html فيه نص الآية الحقيقي والهوية البصرية والخلفية
-قبل ما تعتبره جاهز، حسب القواعد المكتوبة في AGENTS.md.
+"تتجنب" الخطأ. إنت المسؤول الأول عن التأكد بنفسك إن \`scene.html\` فيه المحتوى الحقيقي
+والهوية البصرية الصحيحة قبل ما تعتبره جاهز، حسب القواعد المكتوبة في AGENTS.md — لكن
+خد بالك: **ملفات العلامة بتاعتك بيتحقق منها فعليًا بالكود** (تفصيل في البند 3 و4 تحت).
 
 # معمارية تفكيرك — إلزامية
 1. **Plan-and-Solve**: أول رد منك في المهمة لازم يكون **نص عادي** (من غير أي استدعاء run_terminal)
-   فيه خطتك الكاملة خطوة بخطوة. لو حاولت تستخدم run_terminal قبل كده هيترفض تلقائيًا.
-2. **التنفيذ**: نفّذ خطوة خطوة عن طريق run_terminal. ممنوع تمامًا تكتب أي نص ديني/معلوماتي
-   (آية، حديث، تفسير) من ذاكرتك الداخلية — لازم يكون مصدره نتيجة curl فعلية في نفس الجلسة.
-3. **علامة انتهاء كل فيديو**: بعد ما ترفع فيديو وملف الوصف بتاعه بنجاح، اكتب ملف علامة بالأمر:
+   فيه خطتك الكاملة خطوة بخطوة، بما فيها أي ملف هوية من identities/ حددت تستخدمه.
+   لو حاولت تستخدم run_terminal قبل كده هيترفض تلقائيًا.
+2. **التنفيذ**: نفّذ خطوة خطوة عن طريق run_terminal. ممنوع تمامًا تكتب أي نص أو بيانات
+   مفروض حقيقيتها (نص، اقتباس، معلومة، إحصائية...) من ذاكرتك الداخلية — لازم يكون
+   مصدرها نتيجة فعل حقيقي (زي curl) في نفس الجلسة.
+3. **علامة انتهاء كل فيديو**: بعد ما ترفع فيديو وملف وصفه وملف scene.html نفسه بنجاح
+   فعلي على الـ Release (الثلاثة كـ assets حقيقية)، اكتب ملف علامة بالأمر:
    cat > video_<معرّف فريد>_done.json << 'EOF'
-   {"video_id": "...", "release_video_url": "...", "release_md_url": "..."}
+   {"identifier": "...", "release_video_url": "...", "release_md_url": "...", "release_scene_html_url": "..."}
    EOF
-   **بعد ما تكتب ملف العلامة ده، إنت المسؤول بنفسك (من غير ما حد يطلب منك) عن كتابة
+   **تنبيه**: الملف ده بيتحقق فعليًا (كود حقيقي، مش وعد) إن الروابط التلاتة دي أصول
+   موجودة فعلًا على الـ Release عن طريق gh release view قبل ما يُقبل — لو رُفض هتوصلك
+   رسالة توضح بالتحديد الأصل الناقص، صحّح الرفع وأعد كتابة الملف.
+   **بعد ما ملف العلامة يُقبل، إنت المسؤول بنفسك (من غير ما حد يطلب منك) عن كتابة
    رد نصي عادي (Reflexion) يقيّم اللي حصل قبل ما تكمل لأي فيديو تاني** — مفيش كود
-   بيراقب ده أو بيجبرك عليه، الالتزام بالقاعدة دي بالكامل مسؤوليتك.
+   بيراقب الالتزام بالخطوة دي نفسها أو بيجبرك عليها.
 4. **علامة انتهاء المهمة كاملة**: لما كل الفيديوهات المطلوبة تخلص، اكتب:
    cat > TASK_COMPLETE.json << 'EOF'
-   {"summary": "...", "videos": [...]}
+   {"summary": "...", "videos": [{"identifier": "...", "release_video_url": "...", "release_md_url": "...", "release_scene_html_url": "..."}]}
    EOF
-   وده آخر حاجة تعملها في الجلسة.
+   وده كمان بيتحقق منه بنفس الصرامة قبل ما الجلسة تقفل. آخر حاجة تعملها في الجلسة.
 
 # بيئة التشغيل (متاحة كمتغيرات بيئة لأي أمر run_terminal)
 - الريبو: $GH_REPO (${GH_REPO})
@@ -264,15 +386,22 @@ async function runAgentLoop() {
       log(`نتيجة: ${JSON.stringify(result).slice(0, 400)}`);
       functionResponses.push({ functionResponse: { name: fc.name, response: result, id: fc.id } });
     }
-    contents.push({ role: 'user', parts: functionResponses });
+    // بعد كل دورة: تحقق فعلي من أي ملف علامة فيديو جديد (أصوله موجودة على
+    // الـ Release ولا لأ)، وبعدين من TASK_COMPLETE.json نفسه بنفس الصرامة —
+    // مطابق لما AGENTS.md بيوثّقه، مش بس تتبّع وجود ملف على القرص. أي رسالة
+    // رفض بتتحط في نفس دورة الـ functionResponses عشان يفضل الترتيب متبادل
+    // (model ثم user) صحيح بالنسبة لـ Gemini API.
+    const rejectionMessages = verifyNewVideoMarkers();
+    const completion = checkTaskCompletion();
+    if (completion.rejection) rejectionMessages.push(completion.rejection);
 
-    // فحص بسيط بعد كل دورة: هل ملف إنهاء المهمة ظهر؟ (تتبّع كل فيديو ومراجعته
-    // الذاتية بقت مسؤولية الـ Agent نفسه حسب AGENTS.md، مش كود هنا)
-    if (isTaskComplete()) {
-      const raw = fs.readFileSync(path.join(WORK_DIR, TASK_COMPLETE_MARKER), 'utf-8');
-      finalPayload = JSON.parse(raw);
+    const extraParts = rejectionMessages.map((text) => ({ text }));
+    contents.push({ role: 'user', parts: [...functionResponses, ...extraParts] });
+
+    if (completion.done) {
+      finalPayload = completion.payload;
       taskComplete = true;
-      log('المهمة اكتملت بالكامل.');
+      log('المهمة اكتملت بالكامل (تحقق فعليًا من كل الأصول على الـ Release).');
     }
   }
 
