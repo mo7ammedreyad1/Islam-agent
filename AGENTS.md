@@ -124,14 +124,14 @@
     <script type="importmap">
     {
         "imports": {
-            "mediabunny": "https://cdn.jsdelivr.net/npm/mediabunny@1.52.3/+esm",
-            "@mediabunny/aac-encoder": "https://cdn.jsdelivr.net/npm/@mediabunny/aac-encoder@1.52.3/+esm"
+            "mediabunny": "https://esm.sh/mediabunny@1.50.8",
+            "@mediabunny/aac-encoder": "https://esm.sh/@mediabunny/aac-encoder@1.50.8?deps=mediabunny@1.50.8"
         }
     }
     </script>
 
     <script type="module">
-        import { Output, Mp4OutputFormat, WebMOutputFormat, BufferTarget, CanvasSource, AudioBufferSource, Quality, canEncodeAudio, Input, UrlSource, ALL_FORMATS, CanvasSink } from 'mediabunny';
+        import { Output, Mp4OutputFormat, WebMOutputFormat, BufferTarget, CanvasSource, AudioBufferSource, QUALITY_HIGH, canEncodeAudio, Input, UrlSource, ALL_FORMATS, CanvasSink } from 'mediabunny';
 
         // ============ 🎨 طبقة الهوية بالكامل — هنا ============
 
@@ -344,9 +344,7 @@ function startPreviewLoop() {
 }
 
 // --- AAC Encoder Polyfill — إلزامي على بيئة الـ CI (Chrome على Linux مفيهوش
-// AAC encoder أصلي في WebCodecs، سبب تاريخي مرتبط برخصة AAC). ملحوظة: النسخة
-// 1.52.3 لسه ما تم التأكد عمليًا من ثبات تسجيل registerAacEncoder بيها زي
-// 1.50.8 القديمة — لو ظهر خطأ غريب هنا في أول تشغيل بعد الترقية، ده أول مكان تراجعه. ---
+// AAC encoder أصلي في WebCodecs، سبب تاريخي مرتبط برخصة AAC) ---
 async function ensureAacEncoderAvailable() {
     if (!(await canEncodeAudio('aac'))) {
         logToConsole("تسجيل AAC Polyfill للأنظمة غير المدعومة أصليًا...");
@@ -356,9 +354,8 @@ async function ensureAacEncoderAvailable() {
 }
 
 function getAudioConfigForContainer(container) {
-    // Mediabunny 1.52+: الـ bitrate بقى لازم يتغلف جوه Quality، مش خاصية مباشرة
-    if (container === 'webm') return { codec: 'opus', quality: new Quality({ bitrate: 128_000 }) };
-    return { codec: 'aac', quality: new Quality('high') };
+    if (container === 'webm') return { codec: 'opus', bitrate: 128_000 };
+    return { codec: 'aac', bitrate: QUALITY_HIGH };
 }
 // ملاحظة حاسمة: 'avc'/'aac'/'opus' هنا نصوص عادية (strings)، مش قيم مستوردة —
 // لا يوجد export اسمه VideoCodec/AudioCodec وقت التشغيل (TypeScript type بس).
@@ -366,8 +363,6 @@ function getAudioConfigForContainer(container) {
 async function attemptRealExport(attempt, totalFrames, fps) {
     const format = attempt.container === 'webm' ? new WebMOutputFormat() : new Mp4OutputFormat();
     const output = new Output({ format, target: new BufferTarget() });
-    // attempt.quality جاهزة بالفعل كـ Quality instance من videoAttempts تحت —
-    // CanvasSource بتتجاهل خصائص زيادة (container) موجودة في نفس الـ object
     const videoSource = new CanvasSource(canvas, attempt);
     const audioSource = new AudioBufferSource(getAudioConfigForContainer(attempt.container));
 
@@ -414,11 +409,11 @@ async function exportWithFallback() {
     await ensureAacEncoderAvailable();
 
     const videoAttempts = [
-        { codec: 'avc', quality: new Quality('high'), container: 'mp4' },
-        { codec: 'avc', quality: new Quality({ bitrate: 3_500_000 }), container: 'mp4' },
-        { codec: 'avc', fullCodecString: 'avc1.42001f', quality: new Quality({ bitrate: 3_000_000 }), container: 'mp4' },
-        { codec: 'vp9', quality: new Quality({ bitrate: 4_000_000 }), container: 'webm' },
-        { codec: 'vp8', quality: new Quality({ bitrate: 3_000_000 }), container: 'webm' }
+        { codec: 'avc', bitrate: QUALITY_HIGH, container: 'mp4' },
+        { codec: 'avc', bitrate: 3_500_000, container: 'mp4' },
+        { codec: 'avc', fullCodecString: 'avc1.42001f', bitrate: 3_000_000, container: 'mp4' },
+        { codec: 'vp9', bitrate: 4_000_000, container: 'webm' },
+        { codec: 'vp8', bitrate: 3_000_000, container: 'webm' }
     ];
 
     const totalFrames = Math.ceil(CONFIG.duration * CONFIG.fps);
