@@ -124,21 +124,7 @@
         <div id="console-output"></div>
     </div>
 
-    <script type="importmap">
-    {
-        "imports": {
-            "mediabunny": "https://esm.sh/mediabunny@1.50.8"
-        }
-    }
-    </script>
-
     <script type="module">
-        // بعد إلغاء Mediabunny من التصدير، الاستيراد ده بقى مقصور على
-        // createBrollFrameSampler بس (قراءة فريمات فيديو B-roll أثناء
-        // الرسم) — مالوش أي علاقة بترميز الفيديو النهائي، فده سبب إننا
-        // سايبينه. الترميز نفسه بقى مسؤولية render-runner.js عبر ffmpeg.
-        import { Input, UrlSource, ALL_FORMATS, CanvasSink } from 'mediabunny';
-
         // ============ 🎨 طبقة الهوية بالكامل — هنا ============
 
         // ============ ⚙️ الطبقة التقنية الثابتة — من هنا تحت ============
@@ -304,28 +290,54 @@ function concatenateAudioBuffers(buffers) {
     return { buffer: combined, segments };
 }
 
-// --- أداة عامة: تجيب فريم فيديو B-roll في أي وقت، باستخدام Input+CanvasSink من Mediabunny ---
+// --- أداة عامة: تجيب فريم فيديو B-roll في أي وقت — بديل بدون أي مكتبة
+// خارجية (كان زمان معتمد على Input+CanvasSink من Mediabunny). بيستخدم عنصر
+// <video> مخفي + seek دقيق لكل فريم مطلوب، وده كافي تمامًا لأننا محتاجين
+// بس فريم ثابت واحد في كل استدعاء لـ drawSceneAtTime(t)، مش تشغيل حي. ---
 // استخدام اختياري بالكامل — أي هوية تناديها جوه prepareIdentity() لو محتاجة
 // خلفية فيديو (مش صورة ثابتة). نفس قاعدة CORS بتاعة الصور تنطبق هنا: الرابط
-// لازم يدعم CORS فعليًا وإلا الكانفاس هيتعتبر "tainted" وقت الرسم عليه.
+// لازم يدعم CORS فعليًا (`crossOrigin='anonymous'` + هيدر السيرفر صحيح)
+// وإلا الكانفاس هيتعتبر "tainted" وقت الرسم عليه.
 async function createBrollFrameSampler(url, options = {}) {
-    const input = new Input({ source: new UrlSource(url), formats: ALL_FORMATS });
-    const videoTrack = await input.getPrimaryVideoTrack();
-    if (!videoTrack) throw new Error(`مفيش مسار فيديو (video track) في الرابط: ${url}`);
+    const videoEl = document.createElement('video');
+    videoEl.crossOrigin = 'anonymous';
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+    videoEl.preload = 'auto';
+    videoEl.src = url;
 
-    const sink = new CanvasSink(videoTrack, {
-        width: options.width,
-        height: options.height,
-        fit: options.fit || 'cover',
-        poolSize: options.poolSize || 2,
+    await new Promise((resolve, reject) => {
+        videoEl.onloadedmetadata = resolve;
+        videoEl.onerror = () => reject(new Error(`فشل تحميل فيديو B-roll (تحقق من CORS ورابط الملف): ${url}`));
     });
 
+    const targetW = options.width || videoEl.videoWidth;
+    const targetH = options.height || videoEl.videoHeight;
+    const fit = options.fit || 'cover';
+    const sampleCanvas = document.createElement('canvas');
+    sampleCanvas.width = targetW;
+    sampleCanvas.height = targetH;
+    const sampleCtx = sampleCanvas.getContext('2d');
+
     return {
-        input,
-        videoTrack,
+        videoEl,
         async getFrameAt(time) {
-            const wrapped = await sink.getCanvas(time);
-            return wrapped ? wrapped.canvas : null;
+            const seekTime = Math.min(Math.max(time, 0), Math.max(videoEl.duration - 0.01, 0));
+            await new Promise((resolve) => {
+                videoEl.onseeked = resolve;
+                videoEl.currentTime = seekTime;
+            });
+
+            const vw = videoEl.videoWidth, vh = videoEl.videoHeight;
+            const scale = fit === 'contain'
+                ? Math.min(targetW / vw, targetH / vh)
+                : Math.max(targetW / vw, targetH / vh); // 'cover' الافتراضي
+            const dw = vw * scale, dh = vh * scale;
+            const dx = (targetW - dw) / 2, dy = (targetH - dh) / 2;
+
+            sampleCtx.clearRect(0, 0, targetW, targetH);
+            sampleCtx.drawImage(videoEl, dx, dy, dw, dh);
+            return sampleCanvas;
         },
     };
 }
