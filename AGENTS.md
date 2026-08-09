@@ -1,4 +1,4 @@
-# AGENTS.md — دليل الوكيل لإنتاج فيديوهات شورتس (أي مجال محتوى، حسب ملف الهوية)
+# AGENTS.md — دليل الوكيل لإنتاج فيديوهات (أي مجال محتوى، حسب ملف الهوية)
 
 > ⚠️ **تنبيه حاسم**: `agent.js` مفيهوش أي subcommand اسمه "render". **ممنوع
 > منعًا باتًا تنفّذ `node agent.js`** كأمر terminal من جوه جلستك — ده مش أداة
@@ -11,7 +11,7 @@
 
 ## 1. مين انت
 
-انت Agent مسؤول عن إنتاج فيديو شورتس كامل من الصفر — صوت وصورة ونص — في أي
+انت Agent مسؤول عن إنتاج فيديو كامل من الصفر — صوت وصورة ونص — في أي
 مجال محتوى. مفيش مجال "افتراضي": المجال، شكل المحتوى، وطريقة جلب أصوله بالكامل
 قرار ملف الهوية اللي المستخدم بيسميه. المستخدم بيقولك: اسم ملف هوية من
 `identities/` + طلبه. إنت: تفتح الملف وتفهمه، تكتب `scene.html`، ترندره،
@@ -32,10 +32,9 @@
 3. كل حاجة عن شكل المحتوى المطلوب وطريقة جلب أصوله (صوت/صورة/فيديو) قرار الملف
    ده بس — مفيش افتراض هنا في `AGENTS.md`. أي نص أو بيانات مفروض حقيقيتها،
    مصدرها فعل حقيقي في نفس المهمة، بالطريقة اللي الملف حددها — مش من دماغك،
-   ومش تحميل محلي بـ `curl` والإشارة له بمسار محلي (الجلب دايمًا وقت التشغيل
-   جوه المتصفح، إلا لو الملف نفسه قال غير ده صراحة).
+   
 4. اكتب `scene.html`: **طبقة الهوية** (كودك انت، بناءً على فهمك للملف) فوق، ثم
-   **الطبقة التقنية الثابتة** (نسخة حرفية من القسم 3 تحت، من غير أي تعديل) تحت
+   **الطبقة التقنية الثابتة** (تنسخه زى ما هو و يبقى قابل للتعديل فى حاله وحود اخطاء) تحت
    — الاتنين في نفس `<script type="module">` واحد.
 5. طبقة الهوية لازم تعرّف بالاسم ده بالظبط عشان الطبقة التقنية تشتغل:
    `CONFIG` (`{fps, width, height, duration}`)، `OUTPUT_FILENAME`، `audioBuffer`
@@ -44,11 +43,16 @@
    استيراد أو إعادة تعريف: `ctx`، `layoutArabicParagraph(...)`، `Easing`،
    `clamp01(val)`، `toArabicDigits(input)`، `fetchAndDecodeAudio(url)`،
    `concatenateAudioBuffers(buffers)`، `createBrollFrameSampler(url, options?)`.
-6. قبل ما تكمّل للرندر الكامل: اعرض `scene.html` بأمر `cat scene.html` واقرأه
+
+6. قارن الكود اللي كتبته بند ببند مقابل كل قسم في ملف الهوية (الهندسة
+والإحداثيات، الألوان، الخطوط وأحجامها، صيغ الحركة، الخلفية، الأصول، شكل
+المحتوى) — مش بس قيم المحتوى. أي قيمة مكتوبة في ملف الهوية لازم تلاقي مقابلها
+الدقيق في الكود، وإلا صححه قبل ما تكمل للرندر الكامل: اعرض `scene.html` بأمر `cat scene.html` واقرأه
    كامل من الملف الفعلي على القرص (**ممنوع `grep` أو فحص جزئي**) — قارن قيم
-   بيانات المحتوى بالمطلوب فعليًا في المهمة، وتأكد `prepareIdentity`/
+   بيانات المحتوى بالمطلوب فعليًا واتأكد ان كل المطلوب فى ملف الهويه تم تنفيذه في المهمة، وتأكد `prepareIdentity`/
    `drawSceneAtTime` موجودين بنفس الاسمين. بعد كده افتحه headless لكام ثانية
-   بس واتأكد مفيش `pageerror`:
+   بس واتأكد مفيش `pageerror` (التصدير الفعلي بقى بره المتصفح بالكامل، فمفيش
+   `?autorender=true` ولا أي URL param محتاج تحطه هنا):
    ```js
    const { chromium } = require('playwright');
    const http = require('http');
@@ -80,7 +84,7 @@
 
 ---
 
-## 3. الطبقة التقنية الثابتة — نسخة حرفية، بدون أي اختصار
+## 3. الطبقة التقنية 
 
 هيكل `<head>`/`<body>` الثابت (الأماكن المعلّمة بـ 🎨 بتتملى من ملف الهوية):
 
@@ -110,6 +114,9 @@
             <button class="btn btn-preview" id="btn-replay"><i class="ph ph-arrow-counter-clockwise"></i> تشغيل المعاينة</button>
             <button class="btn btn-preview" id="btn-toggle-console"><i class="ph ph-terminal-window"></i> سجل الأخطاء</button>
         </div>
+        <!-- ⚠️ اتشال زرار التصدير من هنا عمدًا: التصدير الفعلي بقى خارج المتصفح
+        بالكامل عن طريق ffmpeg من render-runner.js (القسم 5). المتصفح هنا وظيفته
+        رسم كل فريم لما render-runner.js يطلبه بس، مش تصدير ملف كامل بنفسه. -->
     </div>
 
     <div id="console-modal">
@@ -120,7 +127,20 @@
         <div id="console-output"></div>
     </div>
 
+    <script type="importmap">
+    {
+        "imports": {
+            "mediabunny": "https://esm.sh/mediabunny@1.50.8"
+        }
+    }
+    </script>
+
+    <!-- ⚠️ mediabunny هنا مقصور على قراءة/فك فريمات فيديو B-roll بس (Input/CanvasSink
+    جوه createBrollFrameSampler تحت). التصدير النهائي بقى بره المتصفح تمامًا، عن
+    طريق ffmpeg من render-runner.js (القسم 5) — راجع القسم 3 كامل. -->
     <script type="module">
+        import { Input, UrlSource, ALL_FORMATS, CanvasSink } from 'mediabunny';
+
         // ============ 🎨 طبقة الهوية بالكامل — هنا ============
 
         // ============ ⚙️ الطبقة التقنية الثابتة — من هنا تحت ============
@@ -142,11 +162,10 @@ let sharedAudioCtx = null;
 let state = { currentTime: 0, isRendering: false, animationFrameId: null };
 
 // --- AI AGENT AUTOMATION HOOKS ---
-// الحالات المتبقية بعد التبسيط: 'loading' (لسه بيحضّر) → 'ready' (خلص
-// prepareIdentity بنجاح، جاهز يبدأ render-runner.js يسحب الفريمات) أو 'error'.
-// مفيش 'rendering'/'completed' هنا خالص — التقدم الفعلي وقت الرندر بيتابعه
-// render-runner.js بنفسه من الخارج (القسم 5)، مش من جوه الصفحة.
-window.renderStatus = 'loading';
+// الحالة هنا بتغطي التحميل الأولي بس ('loading' → 'ready' أو 'error'). التصدير
+// الفعلي بقى مُدار بالكامل من render-runner.js (فريم فريم عن طريق __renderFrame)،
+// مش من هنا — فمفيش داعي لحالة 'rendering'/'completed' جوه الصفحة نفسها.
+window.renderStatus = 'loading'; // 'loading' | 'ready' | 'error'
 
 function logToConsole(msg, type = 'info') {
     const output = document.getElementById('console-output');
@@ -284,39 +303,28 @@ function concatenateAudioBuffers(buffers) {
     return { buffer: combined, segments };
 }
 
-// --- أداة عامة: تجيب فريم فيديو B-roll في أي وقت، باستخدام عنصر `<video>`
-// عادي وتقنية Seek — استخدام اختياري بالكامل، أي هوية تناديها جوه
-// prepareIdentity() لو محتاجة خلفية فيديو (مش صورة ثابتة). نفس قاعدة CORS
-// بتاعة الصور تنطبق هنا: الرابط لازم يدعم CORS فعليًا وإلا الكانفاس هيتعتبر
-// "tainted" وقت الرسم عليه. ---
+// --- أداة عامة: تجيب فريم فيديو B-roll في أي وقت، باستخدام Input+CanvasSink من Mediabunny ---
+// استخدام اختياري بالكامل — أي هوية تناديها جوه prepareIdentity() لو محتاجة
+// خلفية فيديو (مش صورة ثابتة). نفس قاعدة CORS بتاعة الصور تنطبق هنا: الرابط
+// لازم يدعم CORS فعليًا وإلا الكانفاس هيتعتبر "tainted" وقت الرسم عليه.
 async function createBrollFrameSampler(url, options = {}) {
-    const video = document.createElement('video');
-    video.crossOrigin = 'anonymous';
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = 'auto';
-    video.style.display = 'none';
-    document.body.appendChild(video);
+    const input = new Input({ source: new UrlSource(url), formats: ALL_FORMATS });
+    const videoTrack = await input.getPrimaryVideoTrack();
+    if (!videoTrack) throw new Error(`مفيش مسار فيديو (video track) في الرابط: ${url}`);
 
-    await new Promise((resolve, reject) => {
-        video.onloadeddata = () => resolve();
-        video.onerror = () => reject(new Error(`فشل تحميل فيديو B-roll: ${url}`));
-        video.src = url;
-        video.load();
+    const sink = new CanvasSink(videoTrack, {
+        width: options.width,
+        height: options.height,
+        fit: options.fit || 'cover',
+        poolSize: options.poolSize || 2,
     });
 
     return {
-        videoEl: video,
+        input,
+        videoTrack,
         async getFrameAt(time) {
-            const target = video.duration ? (time % video.duration) : time;
-            if (Math.abs(video.currentTime - target) > 0.01) {
-                await new Promise((resolve) => {
-                    const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
-                    video.addEventListener('seeked', onSeeked);
-                    video.currentTime = target;
-                });
-            }
-            return video; // مرّرها مباشرة لـ ctx.drawImage(video, ...)
+            const wrapped = await sink.getCanvas(time);
+            return wrapped ? wrapped.canvas : null;
         },
     };
 }
@@ -337,14 +345,15 @@ function startPreviewLoop() {
         if (currTime < CONFIG.duration) {
             state.animationFrameId = requestAnimationFrame(loop);
         } else {
-            statusText.textContent = "جاهز للعرض ✓ (الرندر الفعلي عن طريق render-runner.js من الترمينال)";
+            statusText.textContent = "جاهز للعرض والتصدير ✓";
             spinner.style.display = 'none';
         }
     }
     state.animationFrameId = requestAnimationFrame(loop);
 }
 
-// تحويل ArrayBuffer إلى base64 — جسر لسكريبت الـ Playwright (Blob مينفعش يترجع من page.evaluate)
+// تحويل ArrayBuffer إلى base64 — جسر عام لأي بيانات ثنائية لازم تعدي من الصفحة
+// لـ render-runner.js (Blob/ArrayBuffer مبيرجعوش زي ما هما من page.evaluate)
 function arrayBufferToBase64(buffer) {
     let binary = '';
     const bytes = new Uint8Array(buffer);
@@ -355,18 +364,28 @@ function arrayBufferToBase64(buffer) {
     return btoa(binary);
 }
 
+async function blobToBase64(blob) {
+    return arrayBufferToBase64(await blob.arrayBuffer());
+}
+
 // --- EXPOSE AUTOMATION HOOKS FOR AI AGENTS ---
-// الرندر الفعلي مش زرار جوه الصفحة ولا دالة "ابدأ وخلص" واحدة — `render-runner.js`
-// (القسم 5) هو اللي بيقود العملية بالكامل من الخارج: بينده `drawSceneAtTime`
-// لكل فريم بنفسه على دفعات ويصدّرها كصور، وبعدين بينده الدالة دي مرة واحدة بس
-// في الآخر عشان يجيب الصوت كامل كـ WAV base64. الفيديو النهائي بيتجمّع بـ
-// ffmpeg من الفريمات + الصوت، مش من جوه المتصفح خالص — راجع القسم 5 للتفاصيل
-// الكاملة وللسبب.
-window.__exportAudioAsWavBase64 = async function () {
+// التصدير بقى بره المتصفح تمامًا: render-runner.js (القسم 5) هو اللي بيلف على
+// كل فريم بنفسه، وبيستخدم الفانكشنين دول بس كجسر خفيف — لا ترميز ولا mux هنا
+// خالص، كله بيحصل بره في عملية ffmpeg منفصلة.
+
+// بيترسم الفريم في الوقت المطلوب، ويرجّع الـ canvas كـ PNG base64 (من غير
+// data:image/png;base64, prefix). بينادَى مرة لكل فريم من render-runner.js.
+window.__renderFrame = async function (timestamp) {
+    await drawSceneAtTime(timestamp);
+    return canvas.toDataURL('image/png').split(',')[1];
+};
+
+// بيرجّع الصوت الكامل (لو موجود) كملف WAV بصيغة base64، مرة واحدة بس، عشان
+// render-runner.js يكتبه ملف على القرص ويدّيه لـ ffmpeg كمدخل صوت للـ mux.
+// null صراحة لو الهوية من غير صوت.
+window.__getAudioWavBase64 = async function () {
     if (!audioBuffer) return null;
-    const wavBlob = audioBufferToWavBlob(audioBuffer);
-    const arrayBuf = await wavBlob.arrayBuffer();
-    return arrayBufferToBase64(arrayBuf);
+    return blobToBase64(audioBufferToWavBlob(audioBuffer));
 };
 
 // --- أزرار الواجهة (IDs ثابتة، موجودة في هيكل الـ HTML فوق) ---
@@ -392,8 +411,12 @@ async function init() {
             const wavBlob = audioBufferToWavBlob(audioBuffer);
             audioAudioEl = new Audio(URL.createObjectURL(wavBlob));
         }
-        statusText.textContent = "جاهز للعرض ✓ (الرندر الفعلي عن طريق render-runner.js من الترمينال)";
+        statusText.textContent = "جاهز للعرض ✓";
         spinner.style.display = 'none';
+        // تعريض CONFIG/OUTPUT_FILENAME لـ render-runner.js — بيقرأهم بعد ما
+        // renderStatus يبقى 'ready' عشان يحسب عدد الفريمات ويسمي الملف الناتج.
+        window.CONFIG = CONFIG; // 🎨 من طبقة الهوية
+        window.OUTPUT_FILENAME = OUTPUT_FILENAME; // 🎨 من طبقة الهوية
         window.renderStatus = 'ready';
         await drawSceneAtTime(0); // 🎨 من طبقة الهوية، async دايمًا
     } catch (err) {
@@ -410,8 +433,10 @@ window.addEventListener('load', init);
 **قاعدة "canvas tainted"**: `scene.html` لازم يُفتح دايمًا بسيرفر HTTP محلي، مش
 `file://` (راجع `render-runner.js` في القسم 5). أي صورة أو فريم B-roll بيترسم
 على الـ canvas لازم CORS فعليًا مفعّلة (`crossOrigin='anonymous'` للصور، رابط
-بيدعم CORS لـ `createBrollFrameSampler`)، وإلا خطأ
-`VideoFrames can't be created from tainted sources`.
+بيدعم CORS لـ `createBrollFrameSampler`)، وإلا `canvas.toDataURL()` جوه
+`__renderFrame` هيرمي `SecurityError: Failed to execute 'toDataURL' ... Tainted
+canvases may not be exported` — نفس المشكلة القديمة، بس رسالة الخطأ اتغيّرت لأن
+الاستخراج بقى عن طريق `toDataURL` مش `VideoFrame`.
 
 ---
 
@@ -422,26 +447,32 @@ window.addEventListener('load', init);
 - `scene.html` يُفتح دايمًا بسيرفر HTTP محلي، مش `file://`.
 - `chromium.launch({ channel: 'chrome' })` إلزامي (القناة المثبّتة في الـ CI، مش الافتراضية).
 - أي انتظار لحالة الرندر لازم تايم آوت إجمالي صريح 8 دقايق على الأقل — لا تعتمد على أي default (`render-runner.js` تحت بيعمل ده تلقائيًا).
-- ممنوع تحميل أي صوت/صورة/فيديو محليًا بـ `curl` والإشارة له بمسار محلي — الجلب دايمًا وقت التشغيل جوه المتصفح، بالطريقة اللي ملف الهوية حددها.
 - ممنوع كتابة أي نص/بيانات مفروض حقيقيتها من الذاكرة — مصدرها فعل حقيقي في نفس المهمة.
 - لو الهوية فيها صوت: التوقيت من مدة الصوت الحقيقي بعد فكّه (`fetchAndDecodeAudio`/`concatenateAudioBuffers`)، مش تخمين.
 - بعد كتابة `scene.html`: `cat scene.html` كامل (لا `grep`)، وقارن قيم المحتوى بالمطلوب فعليًا.
 - قبل الرندر الكامل: فحص headless سريع (القسم 2، بند 6) — لو `SYNTAX_ERROR`، رجّع اصلح `scene.html` أولًا.
-- لو الرندر فشل: صحّح `scene.html` مباشرة وأعد تشغيل `node render-runner.js` — ممنوع ملفات تجربة منفصلة (`test_xxx.html`).
-- الفيديو الناتج دايمًا `.mp4` (ffmpeg بيولّده كذا مباشرة) — ممنوع أي تغيير امتداد يدوي أو تعديل على الملف الناتج.
+- لو الرندر فشل: صحّح `scene.html` مباشرة 
+- الفيديو الناتج دايمًا `.mp4` (H.264/AAC عبر ffmpeg) — الاسم `${OUTPUT_FILENAME}.mp4` بالظبط، ممنوع تغييره يدويًا.
+- الاستخراج بقى فريم فريم عبر `page.evaluate` (مش ترميز مباشر جوه المتصفح)،
+  فالرندر ممكن ياخد وقت أطول شوية من قبل خصوصًا لفيديو أطول من ~60 ثانية — لو
+  التايم آوت (8 دقايق) بيتحقق قبل الاكتمال بشكل متكرر مع نفس الهوية، كبّر
+  `TIMEOUT_MS` في `render-runner.js` بدل ما تحاول تقلل جودة الرسم.
 - لو بتلاقي نفسك بتكرر نفس المحاولة والخطأ أكتر من مرتين على نفس المشكلة، وقف وقارن بنسخة شغالة معروفة بدل ما تكمل تخمين.
 - لو ملف الهوية فيه قسم "ملاحظات معروفة" في آخره، اقرأه قبل ما تبدأ.
 - ملف الوصف المرفوع مع الفيديو: وصف حقيقي مختصر للمحتوى الفعلي، المدة الكلية، وجود شرح/تفسير إضافي أم لا، ورابط الـ Release.
 - الفيديو + ملف الوصف + `scene.html` نفسه — التلاتة يترفعوا كـ assets حقيقية على الـ Release.
-
+- ممنوع منعًا باتًا إنشاء أي ملف أو بيانات وهمية/placeholder (فيديو فاضي بالأصفار،
+  صوت صامت مُختلَق، نص "هيتضاف بعدين") لإرضاء أي فحص أو خطوة رفع أو تحقق —
+  لو عجزت فعليًا عن تنفيذ خطوة، وقف وأعلن الفشل صراحة في ردك النصي، ولا تلفّق
+  نتيجة تبان ناجحة وهي مش حقيقية.
 ---
 
 ## 5. خطوات التنفيذ
 
 1. حدد ملف الهوية المطلوب من طلب المستخدم (اسأله لو غير واضح).
 2. افتح الملف واقرأه كامل، وابدأ فعليًا في جلب أي محتوى/بيانات حقيقية محتاجها المهمة بالطريقة اللي الملف حددها.
-3. اكتب `scene.html` (القسم 2 + القسم 3).
-4. فحص headless سريع (القسم 2، بند 6).
+3. اكتب `scene.html` وراجعه مرتين على الاقل للتأكد انه مطابق تماما للهوية 
+4. فحص headless سريع 
 5. شغّل `node render-runner.js` (السكريبت تحت).
 6. تأكد الرفع الفعلي لكل من: الفيديو، ملف الوصف، `scene.html` (`gh release upload`).
 7. اكتب ملف علامة `video_<معرّف فريد>_done.json` يحتوي
@@ -450,33 +481,24 @@ window.addEventListener('load', init);
    (`gh release view`) قبل ما يقبل الملف. بعد آخر فيديو في المهمة، اكتب
    `TASK_COMPLETE.json` يحتوي `{"summary": "...", "videos": [...]}`.
 
-### `render-runner.js` — استخراج فريمات + ffmpeg (بدون Mediabunny خالص)
+### `render-runner.js`
 
-**تغيير جذري عن النسخة القديمة**: التصدير مبقى بيحصل جوه المتصفح خالص —
-`render-runner.js` نفسه (كود Node) هو اللي بينده `drawSceneAtTime` لكل فريم
-بنفسه، يسحب كل فريم كصورة، يكتبها على القرص، وفي الآخر يستخدم `ffmpeg`
-(برنامج خارجي، مش مكتبة جوه المتصفح) يجمّع الفريمات + الصوت في فيديو MP4
-واحد. **ده يشيل تمامًا** كل تعقيدات الكودك والـ`Quality`/`bitrate` وپولي‌فيل
-الـAAC والتحميل المزدوج اللي واجهناها قبل كده — `ffmpeg` بيدعم H.264/AAC
-بثقة دايمًا، فمفيش حاجة لسلسلة "جرّب كودك تلو كودك" خالص.
-
-`ffmpeg` **متوفرة افتراضيًا** على GitHub Actions Ubuntu runners. لو غابت لأي
-سبب، سطر واحد كفاية: `sudo apt-get install -y ffmpeg`.
+المعمارية اتغيّرت جوهريًا هنا: المتصفح بقى بيرسم فريم واحد بس لما تطلبه منه
+(`window.__renderFrame(timestamp)`)، وإنت (Node) اللي بتلف على كل الفريمات
+وتبعتها **مباشرة عبر pipe** لعملية `ffmpeg` منفصلة شغالة في الخلفية — من غير ما
+تكتب ولا فريم واحد كملف على القرص. `ffmpeg` هو اللي بيعمل الترميز والـ mux
+النهائي (فيديو H.264 + صوت AAC داخل حاوية MP4)، مش المتصفح.
 
 ```js
 const { chromium } = require('playwright');
+const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const { spawn } = require('child_process');
 
-// تايم آوت إجمالي إلزامي — رندر فيديو حقيقي بياخد دقايق، مش قابل للحذف أو التقليل
+// تايم آوت إجمالي إلزامي — رندر فيديو حقيقي بياخد دقايق، مش قابل للحذف أو
+// التقليل. لو فيديو أطول من المعتاد (أكتر من دقيقة بصريح)، كبّره يدويًا هنا.
 const TIMEOUT_MS = 8 * 60 * 1000;
-// فريمات لكل دفعة نقل بين المتصفح وNode — توازن بين استهلاك الذاكرة وعدد
-// النداءات (60 فريم = ثانية واحدة عند 60fps)
-const BATCH_SIZE = 60;
-const FRAMES_DIR = path.join(process.cwd(), '_render_frames');
-const AUDIO_PATH = path.join(process.cwd(), '_render_audio.wav');
 
 function startServer() {
   return new Promise((resolve) => {
@@ -491,51 +513,7 @@ function startServer() {
   });
 }
 
-// بيشغّل ffmpeg ويتابع تقدمه لحظيًا عن طريق `-progress pipe:1` (سطور
-// key=value منظمة على stdout، منفصلة تمامًا عن سجل ffmpeg العادي في stderr)
-function runFfmpeg(fps, framesPattern, audioPath, outputPath, totalDurationSec, startTime) {
-  return new Promise((resolve, reject) => {
-    const args = [
-      '-y',
-      '-framerate', String(fps),
-      '-i', framesPattern,
-      '-i', audioPath,
-      '-c:v', 'libx264',
-      '-pix_fmt', 'yuv420p',
-      '-c:a', 'aac',
-      '-b:a', '192k',
-      '-shortest',
-      '-movflags', '+faststart',
-      '-progress', 'pipe:1',
-      outputPath,
-    ];
-    const proc = spawn('ffmpeg', args);
-    let lastPercent = -1;
-    let stderrTail = '';
-
-    proc.stdout.on('data', (chunk) => {
-      const match = chunk.toString().match(/out_time_ms=(\d+)/);
-      if (!match) return;
-      const outSec = Number(match[1]) / 1_000_000;
-      const percent = Math.min(100, Math.round((outSec / totalDurationSec) * 100));
-      if (percent !== lastPercent) {
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        console.log(`[+${elapsed}s] renderStatus=encoding progress=${percent}%`);
-        lastPercent = percent;
-      }
-    });
-    proc.stderr.on('data', (chunk) => { stderrTail = (stderrTail + chunk.toString()).slice(-4000); });
-    proc.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`ffmpeg فشل (exit code ${code}): ${stderrTail}`));
-    });
-  });
-}
-
 (async () => {
-  fs.rmSync(FRAMES_DIR, { recursive: true, force: true });
-  fs.mkdirSync(FRAMES_DIR);
-
   const server = await startServer();
   const port = server.address().port;
   const browser = await chromium.launch({ channel: 'chrome' }); // مطابق للقناة المثبّتة في الـ CI
@@ -551,83 +529,102 @@ function runFfmpeg(fps, framesPattern, audioPath, outputPath, totalDurationSec, 
   await page.goto(`http://localhost:${port}/scene.html`);
 
   const startTime = Date.now();
-  const result = { success: false };
+  const result = { success: false, elapsed_seconds: 0, console_logs: [], failed_requests: [] };
 
-  try {
-    // 1) ننتظر الصفحة توصل لحالة "جاهز" (يعني prepareIdentity خلصت فعليًا بنجاح)
-    await page.waitForFunction(
-      () => window.renderStatus === 'ready' || window.renderStatus === 'error',
-      { timeout: TIMEOUT_MS }
-    );
-    if ((await page.evaluate(() => window.renderStatus)) === 'error') {
-      throw new Error(`فشل تحضير الهوية: ${await page.evaluate(() => window.__renderError)}`);
-    }
-
-    // 2) نجيب المدة الكلية وعدد الفريمات المطلوب من الصفحة نفسها
-    const { duration, fps } = await page.evaluate(() => ({ duration: CONFIG.duration, fps: CONFIG.fps }));
-    const totalFrames = Math.ceil(duration * fps);
-    console.log(`[+0.0s] renderStatus=capturing_frames progress=0% (${totalFrames} فريم، مدة ${duration.toFixed(2)}s)`);
-
-    // 3) نسحب الفريمات على دفعات — كل دفعة نداء evaluate واحد بيرسم ويصدّر
-    // مجموعة فريمات كصور JPEG (base64)، بدل نداء منفصل لكل فريم
-    for (let batchStart = 0; batchStart < totalFrames; batchStart += BATCH_SIZE) {
-      const batchEnd = Math.min(batchStart + BATCH_SIZE, totalFrames);
-      const batchBase64 = await page.evaluate(async ({ start, end, fps }) => {
-        const frames = [];
-        for (let i = start; i < end; i++) {
-          await drawSceneAtTime(i / fps);
-          frames.push(canvas.toDataURL('image/jpeg', 0.92).split(',')[1]);
-        }
-        return frames;
-      }, { start: batchStart, end: batchEnd, fps });
-
-      batchBase64.forEach((b64, j) => {
-        const frameNum = batchStart + j;
-        fs.writeFileSync(
-          path.join(FRAMES_DIR, `frame_${String(frameNum).padStart(6, '0')}.jpg`),
-          Buffer.from(b64, 'base64')
-        );
-      });
-
-      const percent = Math.round((batchEnd / totalFrames) * 100);
-      console.log(`[+${((Date.now() - startTime) / 1000).toFixed(1)}s] renderStatus=capturing_frames progress=${percent}%`);
-
-      if (Date.now() - startTime > TIMEOUT_MS) {
-        throw new Error(`TimeoutError: تجاوز استخراج الفريمات ${TIMEOUT_MS / 1000} ثانية`);
-      }
-    }
-
-    // 4) نجيب الصوت الكامل كـ WAV base64 (نداء واحد بس، بعد ما الفريمات خلصت)
-    const audioBase64 = await page.evaluate(() => window.__exportAudioAsWavBase64());
-    if (!audioBase64) throw new Error('مفيش صوت للتصدير — audioBuffer غير موجود في طبقة الهوية');
-    fs.writeFileSync(AUDIO_PATH, Buffer.from(audioBase64, 'base64'));
-
-    // 5) ندمج الفريمات + الصوت بـ ffmpeg لملف MP4 نهائي واحد
-    const outputFilename = `${await page.evaluate(() => OUTPUT_FILENAME)}.mp4`;
-    await runFfmpeg(fps, path.join(FRAMES_DIR, 'frame_%06d.jpg'), AUDIO_PATH, outputFilename, duration, startTime);
-
-    result.success = true;
-    result.filename = outputFilename;
-    result.size = fs.statSync(outputFilename).size;
-  } catch (err) {
-    result.error = err.message;
+  function finish(exitCode) {
+    result.elapsed_seconds = Number(((Date.now() - startTime) / 1000).toFixed(1));
+    result.console_logs = consoleLogs.slice(-50);
+    result.failed_requests = failedRequests;
+    console.log(JSON.stringify(result)); // اقرأها من الـ output بتاع run_terminal مباشرة
+    process.exit(exitCode);
   }
 
-  result.elapsed_seconds = Number(((Date.now() - startTime) / 1000).toFixed(1));
-  result.console_logs = consoleLogs.slice(-50);
-  result.failed_requests = failedRequests;
+  // --- خطوة 1: استنى الصفحة توصل 'ready' (يعني prepareIdentity نجح فعليًا) ---
+  let status = null;
+  while (true) {
+    status = await page.evaluate(() => window.renderStatus);
+    if (status === 'ready' || status === 'error') break;
+    if (Date.now() - startTime > TIMEOUT_MS) { status = 'timeout'; break; }
+    await page.waitForTimeout(300);
+  }
 
+  if (status !== 'ready') {
+    result.error = status === 'error'
+      ? await page.evaluate(() => window.__renderError)
+      : `TimeoutError: الصفحة ما وصلتش لحالة ready خلال ${TIMEOUT_MS / 1000}s`;
+    await browser.close();
+    server.close();
+    finish(1);
+    return;
+  }
+
+  const config = await page.evaluate(() => window.CONFIG);
+  const outputFilename = await page.evaluate(() => window.OUTPUT_FILENAME);
+  const totalFrames = Math.ceil(config.duration * config.fps);
+  const outputPath = path.join(process.cwd(), `${outputFilename}.mp4`);
+
+  // --- خطوة 2: لو فيه صوت، اسحبه WAV واحد بس واكتبه ملف مؤقت عشان ffmpeg يعمله mux ---
+  const audioBase64 = await page.evaluate(() => window.__getAudioWavBase64());
+  const audioPath = path.join(process.cwd(), '__render_audio_tmp.wav');
+  if (audioBase64) fs.writeFileSync(audioPath, Buffer.from(audioBase64, 'base64'));
+
+  // --- خطوة 3: افتح ffmpeg كعملية خلفية، بياخد فريمات PNG عبر stdin (image2pipe) ---
+  const ffmpegArgs = ['-y', '-f', 'image2pipe', '-framerate', String(config.fps), '-i', '-'];
+  if (audioBase64) ffmpegArgs.push('-i', audioPath);
+  ffmpegArgs.push('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'medium', '-crf', '18');
+  if (audioBase64) ffmpegArgs.push('-c:a', 'aac', '-b:a', '192k', '-shortest');
+  ffmpegArgs.push('-movflags', '+faststart', outputPath);
+
+  const ffmpeg = spawn('ffmpeg', ffmpegArgs);
+  let ffmpegStderr = '';
+  ffmpeg.stderr.on('data', (d) => { ffmpegStderr += d.toString(); });
+  const ffmpegDone = new Promise((resolve, reject) => {
+    ffmpeg.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg exited with code ${code}`))));
+    ffmpeg.on('error', reject); // مثلاً ffmpeg مش مثبّت أصلاً على الـ runner
+  });
+
+  // --- خطوة 4: للف فريم فريم — نادي على drawSceneAtTime جوه الصفحة، اسحب PNG، ابعته لـ ffmpeg ---
+  let lastPercent = -1;
+  try {
+    for (let i = 0; i < totalFrames; i++) {
+      const timestamp = i / config.fps;
+      const base64Png = await page.evaluate((t) => window.__renderFrame(t), timestamp);
+      const ok = ffmpeg.stdin.write(Buffer.from(base64Png, 'base64'));
+      if (!ok) await new Promise((r) => ffmpeg.stdin.once('drain', r));
+
+      const percent = Math.round(((i + 1) / totalFrames) * 100);
+      if (percent !== lastPercent) {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[+${elapsed}s] frame ${i + 1}/${totalFrames} (${percent}%)`);
+        lastPercent = percent;
+      }
+      if (Date.now() - startTime > TIMEOUT_MS) {
+        throw new Error(`TimeoutError: تجاوز الرندر ${TIMEOUT_MS / 1000}s (آخر فريم: ${i}/${totalFrames})`);
+      }
+    }
+    ffmpeg.stdin.end();
+    await ffmpegDone;
+
+    result.success = true;
+    result.filename = outputPath;
+    result.size = fs.statSync(outputPath).size;
+  } catch (err) {
+    try { ffmpeg.kill('SIGKILL'); } catch (_) {}
+    result.error = `${err.message}${ffmpegStderr ? ' | ffmpeg stderr (آخر جزء): ' + ffmpegStderr.slice(-800) : ''}`;
+  } finally {
+    if (audioBase64) { try { fs.unlinkSync(audioPath); } catch (_) {} }
+  }
+
+  result.last_progress_percent = lastPercent;
   await browser.close();
   server.close();
-  fs.rmSync(FRAMES_DIR, { recursive: true, force: true });
-  fs.rmSync(AUDIO_PATH, { force: true });
-
-  console.log(JSON.stringify(result)); // اقرأها من الـ output بتاع run_terminal مباشرة
-  process.exit(result.success ? 0 : 1);
+  finish(result.success ? 0 : 1);
 })();
 ```
 
 **استخدم `console_logs`/`failed_requests` مباشرة للتشخيص** — لو ملف صوت أو خط
-طلع 404 هتلاقيه صريح في `failed_requests`. الملف الناتج **دايمًا `.mp4`**
-(مفيش سلسلة كودكات ولا حاويات متعددة تُختار بينها زي قبل كده — `libx264`/`aac`
-عن طريق `ffmpeg` موثوقين بثقة دايمًا، فمفيش داعي لأي fallback).
+طلع 404 هتلاقيه صريح في `failed_requests`. لو فشل الرندر، `last_progress_percent`
+بيوريك لحد فين وصل قبل ما يفشل أو يتوقف. لو الخطأ فيه `ffmpeg exited with code`
+أو `ffmpeg stderr`، المشكلة في الترميز نفسه (مثلاً `ffmpeg` مش موجود على
+الـ runner) مش في الرسم — راجع خطوة تثبيت `ffmpeg` في
+`.github/workflows/render.yml`.
