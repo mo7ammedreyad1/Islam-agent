@@ -62,8 +62,8 @@ const TASK_COMPLETE_MARKER = 'TASK_COMPLETE.json';
 // الأداة الوحيدة: تنفيذ أمر شل حقيقي
 // ---------------------------------------------------------------------------
 async function runTerminal({ command }) {
-  const OUTPUT_LIMIT = 900000; // كان 6000 — ده كان بيقطع ملفات كبيرة (scene.html أو ملفات هوية .md) بصمت
-  const ERROR_LIMIT = 900000;  // كان 3000 — نفس المشكلة لو الفشل نفسه فيه output كبير
+  const OUTPUT_LIMIT = 40000; // كان 6000 — ده كان بيقطع ملفات كبيرة (scene.html أو ملفات هوية .md) بصمت
+  const ERROR_LIMIT = 20000;  // كان 3000 — نفس المشكلة لو الفشل نفسه فيه output كبير
 
   function withTruncationNotice(text, limit) {
     if (text.length <= limit) return text;
@@ -79,7 +79,7 @@ async function runTerminal({ command }) {
     const output = execSync(command, {
       cwd: WORK_DIR,
       env: process.env,
-      timeout: 10 * 60 * 1000, // أكبر من مهلة الرندر الداخلية (8 دقايق) عشان الرندر يقدر يرجّع JSON منظم لو فشل، بدل قتل عنيف من هنا
+      timeout: 25 * 60 * 1000, // أكبر من مهلة الرندر الداخلية (20 دقيقة) عشان الرندر يقدر يرجّع JSON منظم لو فشل، بدل قتل عنيف من هنا
       maxBuffer: 30 * 1024 * 1024,
       shell: '/bin/bash',
     }).toString();
