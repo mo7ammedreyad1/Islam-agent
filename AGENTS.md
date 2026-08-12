@@ -21,6 +21,17 @@
 البصرية كملف جديد جوه `identities/`، ده مش إنتاج فيديو عادي — اقرا `skill.md`
 كامل الأول واتبعه بدقة، بدل خطوات القسم 2 تحت.
 
+**قبل أي حاجة تانية، افهم طلب المستخدم الفعلي** — مش كل طلب معناه تنفيذ خط
+الأنابيب الكامل (هوية → `scene.html` → رندر → رفع على Release) من الصفر:
+- لو طلب تصميم موصوف مباشرة في رسالته، من غير ما يشاور على ملف هوية موجود،
+  ده طلب صالح برضه — مفيش إلزام إن كل تصميم لازم يكون له ملف هوية مسبق.
+- لو طلبه تعديل بسيط على فيديو أو `scene.html` اشتغلت عليه قبل كده في نفس
+  الجلسة، عدّل الموجود بدل ما تعيد الكتابة من الصفر.
+- لو طلبه مش عن إنتاج فيديو خالص (سؤال، فحص، أو `scene.html` بس من غير رندر
+  فعلي)، نفّذ اللي طلبه بالظبط ولا تكمّل خطوات زيادة (رندر/رفع) ما طلبهاش.
+- لو مش متأكد إيه المطلوب بالظبط، اسأل — بدل ما تفترض الحالة الافتراضية
+  (فيديو كامل جديد من هوية).
+
 ## 2. إزاي تكتب `scene.html`
 
 1. افهم طلب المستخدم، وحدد أي ملف هوية من `identities/` طلبه بالاسم — لو مش
@@ -51,20 +62,25 @@
    كامل من الملف الفعلي على القرص (**ممنوع `grep` أو فحص جزئي**) — قارن قيم
    بيانات المحتوى بالمطلوب فعليًا واتأكد ان كل المطلوب فى ملف الهويه تم تنفيذه في المهمة، وتأكد `prepareIdentity`/
    `drawSceneAtTime` موجودين بنفس الاسمين. بعد كده افتحه headless لكام ثانية
-   بس واتأكد مفيش `pageerror`. **إلزامي: اكتب الكود ده بالحرف عن طريق
-   `cat << 'EOF' > _headless_check.js` في ملف حقيقي على القرص، وشغّله بـ
-   `node _headless_check.js` — بالظبط زي `render-runner.js` في القسم 5.
-   ممنوع تمامًا تشغيله inline عبر `node -e "..."`: أي `${...}` جوه الكود
-   هيتفسّر غلط كمتغيّر bash لأنه جوه علامتي تنصيص مزدوجتين، وده هيكسر
+   واتأكد مفيش `pageerror` **ولا فشل تحضير الهوية نفسها** (فشل جلب صوت/خط/صورة
+   داخل `prepareIdentity()` بيتلقط بأدب جوه try/catch ويحط `renderStatus='error'`
+   من غير ما يرمي `pageerror` خالص — فحص `pageerror` بس عمى تمامًا عن النوع ده
+   من الفشل، ومكانه الصح هنا مش بعد دقايق من رندر كامل). **إلزامي: اكتب الكود
+   ده بالحرف عن طريق `cat << 'EOF' > _headless_check.js` في ملف حقيقي على
+   القرص، وشغّله بـ `node _headless_check.js` — بالظبط زي `render-runner.js`
+   في القسم 5. ممنوع تمامًا تشغيله inline عبر `node -e "..."`: أي `${...}` جوه
+   الكود هيتفسّر غلط كمتغيّر bash لأنه جوه علامتي تنصيص مزدوجتين، وده هيكسر
    الرابط بصمت. وممنوع كمان تعيد كتابة الكود من الذاكرة — انسخه زي ما هو
-   حرفيًا، عشان أي تعديل ولو بسيط (زي تغيير `r` في `server.listen(0, r)`
-   لدالة فاضية) ممكن يوقف الـ Promise عن الحل نهائيًا ويعلّق التنفيذ لحد ما
-   الـ timeout الخارجي يقفله بعد دقايق طويلة من غير أي فايدة.**
+   حرفيًا؛ التعديل المسموح الوحيد هو قيمة `CHECK_TIMEOUT_MS` نفسها لو الهوية
+   محتاجة وقت تحضير أطول، أي حاجة تانية في الكود ممنوع تتلمس.**
    ```js
    const { chromium } = require('playwright');
    const http = require('http');
    const fs = require('fs');
    const path = require('path');
+
+   const CHECK_TIMEOUT_MS = 15000; // وقت كافٍ لتحضير الهوية (جلب صوت/خط/صورة حقيقي) — القيمة الوحيدة المسموح تعديلها هنا
+
    (async () => {
      const server = http.createServer((req, res) => {
        fs.readFile(path.join(process.cwd(), req.url.split('?')[0]), (err, data) => {
@@ -76,13 +92,40 @@
      const port = server.address().port;
      const browser = await chromium.launch({ channel: 'chrome' });
      const page = await browser.newPage();
-     let errorFound = null;
-     page.on('pageerror', (err) => { errorFound = err.message; });
+
+     let pageErr = null;
+     const failedRequests = [];
+     page.on('pageerror', (err) => { pageErr = err.message; });
+     page.on('requestfailed', (req) => failedRequests.push(`${req.url()} — ${req.failure()?.errorText}`));
+     page.on('response', (res) => { if (res.status() >= 400) failedRequests.push(`${res.url()} — HTTP ${res.status()}`); });
+
      await page.goto(`http://localhost:${port}/scene.html`);
-     await page.waitForTimeout(3000);
+
+     const start = Date.now();
+     let status = null;
+     while (Date.now() - start < CHECK_TIMEOUT_MS) {
+       status = await page.evaluate(() => window.renderStatus).catch(() => null);
+       if (status === 'ready' || status === 'error' || pageErr) break;
+       await page.waitForTimeout(200);
+     }
+
      await browser.close();
      server.close();
-     if (errorFound) { console.log('SYNTAX_ERROR:', errorFound); process.exit(1); }
+
+     if (pageErr) { console.log('SYNTAX_ERROR:', pageErr); process.exit(1); }
+     if (status === 'error') {
+       const errMsg = await page.evaluate(() => window.__renderError).catch(() => 'غير معروف');
+       console.log('SYNTAX_ERROR:', errMsg, '| failed_requests:', JSON.stringify(failedRequests));
+       process.exit(1);
+     }
+     if (status !== 'ready') {
+       console.log(`SYNTAX_ERROR: التحضير لم يكتمل خلال ${CHECK_TIMEOUT_MS / 1000} ثانية (renderStatus=${status})`);
+       process.exit(1);
+     }
+     if (failedRequests.length) {
+       console.log('SYNTAX_ERROR: طلبات فشلت رغم renderStatus=ready:', JSON.stringify(failedRequests));
+       process.exit(1);
+     }
      console.log('SCENE_OK');
    })();
    ```
@@ -115,12 +158,12 @@
 <body>
     <div id="viewport">
         <!-- 🎨 IDENTITY: width/height من ملف الهوية -->
-        <canvas id="shortsCanvas" width="1080" height="1920"></canvas>
-        <div id="hud"><div class="spinner" id="spinner"></div><span id="status-text">جاري تحضير فيديو الشورتس العمودي...</span></div>
+        <canvas id="videoCanvas"></canvas>
+        <div id="hud"><div class="spinner" id="spinner"></div><span id="status-text">جاري تحضير الفيديو...</span></div>
         <div id="controls-overlay">
             <button class="btn btn-preview" id="btn-replay"><i class="ph ph-arrow-counter-clockwise"></i> تشغيل المعاينة</button>
             <button class="btn btn-preview" id="btn-toggle-console"><i class="ph ph-terminal-window"></i> سجل الأخطاء</button>
-            <button class="btn btn-render" id="btn-render-start"><i class="ph-fill ph-video-camera"></i> تصدير Shorts (MP4 + صوت)</button>
+            <button class="btn btn-render" id="btn-render-start"><i class="ph-fill ph-video-camera"></i> تصدير الفيديو (MP4 + صوت)</button>
         </div>
     </div>
 
@@ -144,7 +187,7 @@
 كود الطبقة التقنية الثابتة بالكامل (يحل محل التعليق الأخير فوق):
 
 ```js
-const canvas = document.getElementById('shortsCanvas');
+const canvas = document.getElementById('videoCanvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 const statusText = document.getElementById('status-text');
 const spinner = document.getElementById('spinner');
@@ -444,6 +487,11 @@ async function init() {
     try {
         await prepareIdentity(); // 🎨 من طبقة الهوية بالكامل
 
+        // أبعاد الكانفاس بقت بتتحدد من CONFIG برمجيًا، مش من HTML ثابت —
+        // لازم تتحدد هنا قبل أي رسم أو التقاط فريم.
+        canvas.width = CONFIG.width;
+        canvas.height = CONFIG.height;
+
         window.__ofoqFps = CONFIG.fps;
         window.__ofoqTotalFrames = Math.ceil(CONFIG.duration * CONFIG.fps);
         window.__ofoqOutputFilename = `${OUTPUT_FILENAME}.mp4`; // امتداد ثابت
@@ -487,8 +535,10 @@ window.addEventListener('load', init);
 - `render-runner.js` سكريبت منفصل تكتبه إنت (القسم 5) وتشغّله بـ `node render-runner.js`.
 - `scene.html` يُفتح دايمًا بسيرفر HTTP محلي، مش `file://`.
 - `chromium.launch({ channel: 'chrome' })` إلزامي (القناة المثبّتة في الـ CI، مش الافتراضية).
-- أي انتظار لحالة الرندر لازم تايم آوت إجمالي صريح 8 دقايق على الأقل — لا تعتمد على أي default (`render-runner.js` تحت بيعمل ده تلقائيًا).
-- ممنوع كتابة أي نص/بيانات مفروض حقيقيتها من الذاكرة — مصدرها فعل حقيقي في نفس المهمة.
+- أي انتظار لحالة الرندر لازم تايم آوت إجمالي صريح 20 دقيقة على الأقل — لا تعتمد على أي default (`render-runner.js` تحت بيعمل ده تلقائيًا).
+- ممنوع كتابة أي نص/بيانات مفروض حقيقيتها من الذاكرة — مصدرها فعل حقيقي في نفس المهمة. القاعدة دي سارية حتى في أكواد اختبار أو تجربة مؤقتة (زي سكريبت بتكتبه بس عشان تتأكد من شكل البيانات) — مش `scene.html` النهائي بس؛ أي نص بيتكتب هناك أول مرة من الذاكرة هيتنسخ غالبًا لـ `scene.html` بعد كده.
+- لو ملف الهوية حدد مصدر أصل بصيغة رابط معيّنة (نمط URL، API، أو نطاق موقع محدد)، الالتزام بيه إلزامي — أي مصدر بديل، ولو معروف ومشهور، محتاج تسأل المستخدم عليه صراحة الأول، مش قرار منفرد منك.
+- أسماء ملفات الهوية دايمًا بامتداد `.md` — لو مش متأكد من الاسم الدقيق، `ls identities/` أول حاجة بدل ما تخمّن.
 - لو الهوية فيها صوت: التوقيت من مدة الصوت الحقيقي بعد فكّه (`fetchAndDecodeAudio`/`concatenateAudioBuffers`)، مش تخمين.
 - بعد كتابة `scene.html`: `cat scene.html` كامل (لا `grep`)، وقارن قيم المحتوى بالمطلوب فعليًا.
 - قبل الرندر الكامل: فحص headless سريع (القسم 2، بند 6) — لو `SYNTAX_ERROR`، رجّع اصلح `scene.html` أولًا.
