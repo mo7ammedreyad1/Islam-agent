@@ -1,6 +1,6 @@
 
 ```markdown
-# AGENTS.md — دليل الوكيل لإنتاج ورندر الفيديوهات (Ultra-Lean & Monitored Engine)
+# AGENTS.md — دليل الوكيل لإنتاج ورندر الفيديوهات (Ultra-Lean & Fast Engine)
 
 > ⚠️ **تحذير حاسم**: أمر `node agent.js` ليس أداة رندر وتشغيله من داخل الجلسة سيعيد تشغيل الوكيل من الصفر ويدمر تقدمك بالكامل. عملية الرندر تتم حصرياً عبر تشغيل سكريبت `render-runner.js` الموضح في القسم 4 بأمر: `node render-runner.js`.
 
@@ -8,7 +8,7 @@
 
 ## 1. دور الوكيل وأنماط المدخلات المدعومة (Agent Mandate & Input Modes)
 
-أنت **عقل تنفيذي ومحرك إنتاج برمجي** مسؤول عن استقبال كود المشاهد أو روابطها أو ملفات الهوية، ورندرتها بدقة عالية عبر المتصفح ومحرك `ffmpeg`، واستخراج مقاطع الفيديو ودمجها ورفعها على GitHub Release مع مراقبة شاملة وفورية لكافة الأصول ونسبة التقدم.
+أنت **عقل تنفيذي ومحرك إنتاج برمجي** مسؤول عن استقبال كود المشاهد أو روابطها أو ملفات الهوية، ورندرتها بدقة عالية عبر المتصفح ومحرك `ffmpeg`، واستخراج مقاطع الفيديو ودمجها ورفعها على GitHub Release.
 
 ### يتعامل الوكيل مع 4 أنماط من المدخلات بمرونة تامة:
 
@@ -46,7 +46,7 @@
 - `CONFIG`: `{ fps: 30, width: number, height: number, duration: number }`.
 - `OUTPUT_FILENAME`: اسم الملف المصدر كنص بدون امتداد.
 - `audioBuffer`: كائن `AudioBuffer` أو `null` صراحة عند عدم وجود صوت.
-- `async function prepareIdentity()`: دالة التهيئة والتحميل غير المتزامن للأصول والخطوط والفيديوهات الخارجية.
+- `async function prepareIdentity()`: دالة التهيئة والتحميل غير المتزامن للأصول والخطوط.
 - `async function drawSceneAtTime(time)`: دالة الرسم اللحظية الأساسية لكل فريم (دائماً `async`).
 - **الأدوات المتاحة تلقائياً**: `ctx`, `clamp01(val)`, `fetchAndDecodeAudio(url)`.
 
@@ -120,26 +120,6 @@
         .btn-preview:hover { background: rgba(255, 255, 255, 0.22); }
         .btn-render { background: #0a0f1d; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); }
         .btn-render:hover { background: #1e293b; }
-
-        /* نافذة سجل العمليات البرمجية */
-        #console-modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 700px; max-width: 92vw; height: 420px; background: #090d16;
-            border: 1px solid #1e293b; border-radius: 14px; box-shadow: 0 30px 80px rgba(0,0,0,0.85);
-            z-index: 100; display: none; flex-direction: column; overflow: hidden;
-        }
-        #console-header {
-            background: #151d2d; padding: 10px 16px; display: flex;
-            justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold;
-        }
-        #console-output {
-            flex: 1; padding: 14px; overflow-y: auto; font-family: monospace;
-            font-size: 12px; color: #cbd5e1; background: #060910; line-height: 1.6;
-        }
-        .log-line { margin-bottom: 4px; word-break: break-all; }
-        .log-info { color: #38bdf8; }
-        .log-warn { color: #facc15; }
-        .log-error { color: #f87171; }
     </style>
 </head>
 <body>
@@ -148,29 +128,12 @@
         <div id="hud"><div class="spinner" id="spinner"></div><span id="status-text">جاري إعداد المشهد...</span></div>
         <div id="controls-overlay">
             <button class="btn btn-preview" id="btn-replay"><i class="ph ph-arrow-counter-clockwise"></i> تشغيل المعاينة</button>
-            <button class="btn btn-preview" id="btn-toggle-console"><i class="ph ph-terminal-window"></i> سجل الأخطاء</button>
             <button class="btn btn-render" id="btn-render-start"><i class="ph-fill ph-video-camera"></i> تصدير الفيديو</button>
         </div>
     </div>
 
-    <!-- نافذة السجل البرمجي مع زر نسخ السجل الآمن -->
-    <div id="console-modal">
-        <div id="console-header">
-            <span><i class="ph ph-terminal-window"></i> سجل العمليات والأخطاء</span>
-            <div style="display: flex; gap: 8px;">
-                <button class="btn btn-preview" id="btn-copy-console" style="background:#2563eb; color:#ffffff; padding:4px 12px; font-size:11px;">
-                    <i class="ph ph-copy"></i> نسخ السجل
-                </button>
-                <button class="btn btn-preview" id="btn-close-console" style="background:#ef4444; color:#ffffff; padding:4px 12px; font-size:11px;">
-                    إغلاق
-                </button>
-            </div>
-        </div>
-        <div id="console-output"></div>
-    </div>
-
     <script type="module">
-        // ============ IDENTITY LAYER (CUSTOM MOTION & ASSETS CODE) ============
+        // ============ IDENTITY LAYER (CUSTOM MOTION LOGIC) ============
 
         // ============ FIXED TECHNICAL LAYER (ULTRA-LEAN RUNTIME) ============
         const canvas = document.getElementById('videoCanvas');
@@ -183,16 +146,6 @@
 
         window.renderStatus = 'loading';
         function clamp01(val) { return Math.max(0, Math.min(1, val)); }
-
-        function logToConsole(msg, type = 'info') {
-            const output = document.getElementById('console-output');
-            if (!output) return;
-            const line = document.createElement('div');
-            line.className = `log-line log-${type}`;
-            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            output.appendChild(line);
-            output.scrollTop = output.scrollHeight;
-        }
 
         function getSharedAudioContext() {
             if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -274,34 +227,6 @@
             startPreviewLoop();
         });
 
-        document.getElementById('btn-toggle-console').addEventListener('click', () => {
-            const modal = document.getElementById('console-modal');
-            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
-        });
-
-        document.getElementById('btn-close-console').addEventListener('click', () => {
-            document.getElementById('console-modal').style.display = 'none';
-        });
-
-        // زر نسخ السجل الآمن المتوافق مع الهواتف والـ WebViews
-        document.getElementById('btn-copy-console').addEventListener('click', () => {
-            const output = document.getElementById('console-output');
-            const textToCopy = output.innerText || output.textContent;
-            try {
-                const temp = document.createElement('textarea');
-                temp.value = textToCopy;
-                temp.style.position = 'fixed';
-                temp.style.left = '-9999px';
-                document.body.appendChild(temp);
-                temp.select();
-                document.execCommand('copy');
-                document.body.removeChild(temp);
-                logToConsole("تم نسخ السجل للحافظة بنجاح ✓", "info");
-            } catch (err) {
-                logToConsole("فشل النسخ: " + err.message, "warn");
-            }
-        });
-
         document.getElementById('btn-render-start').addEventListener('click', () => {
             alert("التصدير الفعلي يتم عبر تشغيل سكريبت render-runner.js");
         });
@@ -332,10 +257,8 @@
                 statusText.textContent = "جاهز للعرض والتصدير ✓";
                 spinner.style.display = 'none';
                 window.renderStatus = 'ready';
-                logToConsole("تم تجهيز المشهد بالكامل وهو جاهز للرندر ✓", "info");
                 await drawSceneAtTime(0);
             } catch (err) {
-                logToConsole("خطأ أثناء التهيئة: " + err.message, "error");
                 statusText.textContent = "حدث خطأ أثناء التحميل";
                 window.__renderError = err.message;
                 window.renderStatus = 'error';
@@ -346,6 +269,8 @@
 </body>
 </html>
 ```
+
+*(ملاحظة اختيارية: في حال احتاج مشهد معين لخلفية فيديو B-roll، يتم إنشاؤه ببساطة بـ 4 أسطر داخل `prepareIdentity` الخاصة بالمشهد: `videoEl = document.createElement('video'); videoEl.src = '...'; videoEl.crossOrigin = 'anonymous'; await new Promise(r => videoEl.onloadeddata = r);` وفي دالة الرسم: `videoEl.currentTime = time; ctx.drawImage(videoEl, 0, 0, w, h);`)*
 
 ---
 
@@ -415,9 +340,9 @@ const CHECK_TIMEOUT_MS = 15000;
 
 ---
 
-## 4. محرك الرندر الشامل والمراقبة اللحظية (`render-runner.js` & Concat Engine)
+## 4. محرك الرندر الشامل والدمج والتسليم (`render-runner.js` & Concat Engine)
 
-### 4.1 سكريبت الرندر المطور مع مصفوفة تدقيق الأصول وشريط التقدم (`render-runner.js`)
+### 4.1 سكريبت الرندر الشامل (`render-runner.js`)
 ```js
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
@@ -448,14 +373,6 @@ function writeWithBackpressure(stream, buffer) {
     if (ok) resolve();
     else stream.once('drain', resolve);
   });
-}
-
-// دالة رسم شريط التقدم اللحظي
-function getProgressBar(current, total, barWidth = 24) {
-  const percent = Math.min(100, Math.round((current / total) * 100));
-  const filled = Math.min(barWidth, Math.round((current / total) * barWidth));
-  const bar = '█'.repeat(filled) + '░'.repeat(barWidth - filled);
-  return { bar, percent };
 }
 
 (async () => {
@@ -513,22 +430,6 @@ function getProgressBar(current, total, barWidth = 24) {
     const totalFrames = await page.evaluate(() => window.__ofoqTotalFrames);
     const fps = await page.evaluate(() => window.__ofoqFps);
     const outputFilename = await page.evaluate(() => window.__ofoqOutputFilename);
-    const width = await page.evaluate(() => window.CONFIG ? window.CONFIG.width : 1920);
-    const height = await page.evaluate(() => window.CONFIG ? window.CONFIG.height : 1080);
-    const duration = await page.evaluate(() => window.CONFIG ? window.CONFIG.duration : (totalFrames / fps));
-
-    // =========================================================================
-    // 📊 مصفوفة تدقيق وفحص الأصول في الكونسول (Asset Telemetry Audit)
-    // =========================================================================
-    console.log("================================================================================");
-    console.log("🎬 SCENE ASSETS & TELEMETRY AUDIT");
-    console.log("================================================================================");
-    console.log(`• Resolution    : ${width}x${height} (${width > height ? '16:9 Landscape' : '9:16 Shorts'})`);
-    console.log(`• Framerate     : ${fps} FPS | Total Frames: ${totalFrames} (${duration.toFixed(1)}s)`);
-    console.log(`• Output File   : ${outputFilename}`);
-    console.log(`• Audio Track   : ${hasAudio ? `Loaded ✓ (WAV Buffer | ${(fs.statSync('audio.wav').size / (1024*1024)).toFixed(2)} MB)` : 'No Audio (Silent Mode)'}`);
-    console.log(`• Network Audit : ${failedRequests.length === 0 ? '0 Failed Requests ✓' : `${failedRequests.length} Warnings Logged`}`);
-    console.log("================================================================================\n");
 
     const ffmpegArgs = [
       '-y',
@@ -570,15 +471,10 @@ function getProgressBar(current, total, barWidth = 24) {
         await writeWithBackpressure(ffmpeg.stdin, Buffer.from(base64Frame, 'base64'));
       }
 
-      const processed = start + count;
-      const { bar, percent } = getProgressBar(processed, totalFrames);
-
+      const percent = Math.round(((start + count) / totalFrames) * 100);
       if (percent !== lastPercent) {
-        const elapsed = (Date.now() - startTime) / 1000;
-        const currentFps = (processed / elapsed).toFixed(1);
-        const eta = currentFps > 0 ? ((totalFrames - processed) / currentFps).toFixed(1) : '?';
-        
-        console.log(`[${bar}] ${percent}% | ${processed}/${totalFrames} frames | ${currentFps} fps | ETA: ${eta}s | Elapsed: ${elapsed.toFixed(1)}s`);
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[+${elapsed}s] frames=${start + count}/${totalFrames} progress=${percent}%`);
         lastPercent = percent;
       }
     }
@@ -603,7 +499,6 @@ function getProgressBar(current, total, barWidth = 24) {
     if (result.success) {
       result.filename = outputFilename;
       result.size = fs.statSync(outputFilename).size;
-      console.log(`\n🎉 RENDER COMPLETE: ${outputFilename} (${(result.size / (1024*1024)).toFixed(2)} MB) in ${result.elapsed_seconds}s\n`);
     } else {
       result.error = `ffmpeg exited with code ${ffmpegExitCode}`;
     }
