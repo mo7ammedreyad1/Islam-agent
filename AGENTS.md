@@ -1,63 +1,41 @@
 
+### 📄 ملف `AGENTS.md` المحدث بالكامل:
+
 ```markdown
-# AGENTS.md — دليل الوكيل لإنتاج ورندر الفيديوهات (Ultra-Lean & Fast Engine)
+# AGENTS.md — دليل الوكيل لإنتاج ورندر الفيديوهات (B-Roll & Multi-Scene Engine)
 
 > ⚠️ **تحذير حاسم**: أمر `node agent.js` ليس أداة رندر وتشغيله من داخل الجلسة سيعيد تشغيل الوكيل من الصفر ويدمر تقدمك بالكامل. عملية الرندر تتم حصرياً عبر تشغيل سكريبت `render-runner.js` الموضح في القسم 4 بأمر: `node render-runner.js`.
 
 ---
 
-## 1. دور الوكيل وأنماط المدخلات المدعومة (Agent Mandate & Input Modes)
+## 1. دور الوكيل ومعمارية التعامل مع الأصول (B-Roll & Audio Pipelines)
 
-أنت **عقل تنفيذي ومحرك إنتاج برمجي** مسؤول عن استقبال كود المشاهد أو روابطها أو ملفات الهوية، ورندرتها بدقة عالية عبر المتصفح ومحرك `ffmpeg`، واستخراج مقاطع الفيديو ودمجها ورفعها على GitHub Release.
+أنت **عقل تنفيذي ومحرك إنتاج برمجي** مسؤول عن استقبال المشاهد، تهيئة مواردها محلياً، ورندرتها بدقة فائقة عبر المتصفح و `ffmpeg`.
 
-### يتعامل الوكيل مع 4 أنماط من المدخلات بمرونة تامة:
+### 🚀 القاعدة الذهبية لمعالجة الـ B-Roll (مثل الصوت تماماً):
+* **حظر تشغيل الفيديوهات الخام داخل المتصفح أثناء الرندر**: لا تستخدم عنصر `<video>` أو أوامر الـ `seek` لفك فريمات الـ B-Roll داخل الكانفاس لتجنب بطء التشفير وتلوث الـ CORS.
+* **الفك المسبق للفريمات (Pre-Extracted Frames)**: إذا كان المشهد يحتوي على فيديو B-roll، يقوم الوكيل قبل تشغيل الرندر بتنزيل الفيديو وفك إطاراته مسبقاً عبر `ffmpeg` إلى مجلد محلي `broll_frames/` بدقة المشهد ونفس معدل الـ `fps`، ويجعل الكانفاس يستدعي الصور المحلية في الوقت المحدد برمجياً.
 
-#### 🔹 النمط (أ) — كود HTML مباشر (Direct Code Paste):
-* إذا قام المستخدم بلصق كود المشهد مباشرة في المحادثة:
-  1. احفظ الكود فوراً في ملف `scene.html`.
-  2. انتقل لخطوة فحص الـ Headless ثم الرندر المباشر.
-
-#### 🔹 النمط (ب) — رابط Raw مفرد (Single Raw URL):
-* إذا أرسل المستخدم رابطاً مباشراً لكود المشهد (مثل GitHub Raw, Gist, Pastebin):
-  1. قم بجلب محتوى الرابط وحفظه فوراً في ملف `scene.html` بأمر:
-     ```bash
-     curl -fsSL "<RAW_URL>" -o scene.html
-     ```
-  2. انتقل لخطوة فحص الـ Headless ثم الرندر المباشر.
-
-#### 🔹 النمط (ج) — روابط Raw متعددة مع طلب الدمج (Multi-Scene Batch & Concat):
-* إذا أرسل المستخدم قائمة بروابط Raw لعدة مشاهد وطلب رندر كل مشهد ودمجهم بالترتيب:
-  1. **حلقة الرندر التسلسلي**:
-     - المشهد الأول: جلب الرابط الأول ➔ حفظه كـ `scene.html` ➔ فحصه ➔ رندره كـ `part_1.mp4`.
-     - المشهد الثاني: جلب الرابط الثاني ➔ حفظه كـ `scene.html` ➔ فحصه ➔ رندره كـ `part_2.mp4`.
-     - تكرار العملية لجميع المشاهد بالترتيب المطلوب (`part_3.mp4`, `part_4.mp4`...).
-  2. **الدمج التلقائي السلس**: دمج جميع المقاطع بالترتيب عبر محرك الدمج الموضح في القسم 4 لاستخراج `final_merged_video.mp4`.
-  3. رفع المقاطع المفردة + الفيديو النهائي المدمج على الـ Release.
-
-قاعدة التعامل مع فيديوهات الـ B-Roll:
-"إذا كان المشهد يحتوي على فيديو B-roll، ممنوع تشغيل المتصفح لفك تشفير الفيديو لحظياً. قبل كتابة أو رندر scene.html، نفّذ أمراً واحداً عبر التيرمينال لفك فريمات الفيديو في مجلد محلي frames/:
-mkdir -p frames && ffmpeg -y -i "<VIDEO_URL>" -vf "fps=30,scale=1920:1080" -q:v 2 frames/f_%04d.jpg
-وفي كود scene.html، يتم استدعاء الصور مباشرة كـ Image() داخل دالة prepareIdentity ورسمها لحظياً في drawSceneAtTime."
-
-#### 🔹 النمط (د) — بناء المشهد من ملف هوية (`identities/<name>.md`):
-* إذا طلب المستخدم بناء مشهد من ملف هوية: اقرأ المواصفات البصرية، ابنِ كود `scene.html` كاملاً، افحصه ورندره.
+### أنماط المدخلات المدعومة:
+1. **كود HTML مباشر**: حفظه في `scene.html` ثم بدء المعالجة.
+2. **رابط Raw مفرد**: جلبه بأمر `curl -fsSL "<URL>" -o scene.html`.
+3. **روابط Raw متعددة**: فك أصول كل مشهد، رندرتها تسلسلياً (`part_1.mp4`, `part_2.mp4`...) ثم دمجها تلقائياً بـ `ffmpeg concat`.
+4. **بناء من ملف هوية في `identities/`**: قراءة الوصف البصري وكتابة المشهد من الصفر.
 
 ---
 
-## 2. العقد المعماري والطبقة التقنية الثابتة النقية (Ultra-Lean Technical Layer)
+## 2. العقد المعماري والطبقة التقنية الثابتة (Architectural Contract & Shell)
 
 ### 2.1 العقد التقني (Technical Contract)
 يجب أن تعرّف طبقة الهوية في أي كود `scene.html` المتغيرات والدوال التالية بدقة:
 - `CONFIG`: `{ fps: 30, width: number, height: number, duration: number }`.
 - `OUTPUT_FILENAME`: اسم الملف المصدر كنص بدون امتداد.
 - `audioBuffer`: كائن `AudioBuffer` أو `null` صراحة عند عدم وجود صوت.
-- `async function prepareIdentity()`: دالة التهيئة والتحميل غير المتزامن للأصول والخطوط.
+- `async function prepareIdentity()`: دالة التهيئة والتحميل غير المتزامن للصور والأصول المحلية.
 - `async function drawSceneAtTime(time)`: دالة الرسم اللحظية الأساسية لكل فريم (دائماً `async`).
 - **الأدوات المتاحة تلقائياً**: `ctx`, `clamp01(val)`, `fetchAndDecodeAudio(url)`.
 
----
-
-### 2.2 قالب HTML والطبقة التقنية الثابتة (Fixed Shell)
+### 2.2 قالب HTML والطبقة التقنية الثابتة المتجاوبة (Fixed Shell)
 
 ```html
 <!DOCTYPE html>
@@ -82,7 +60,6 @@ mkdir -p frames && ffmpeg -y -i "<VIDEO_URL>" -vf "fps=30,scale=1920:1080" -q:v 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100vh; min-height: 100dvh; overflow: hidden; padding: 10px;
         }
-        /* إطار المعاينة المتجاوب تلقائياً مع كافة الأبعاد والشاشات بالـ vh و vw */
         #viewport {
             position: relative;
             max-height: 86vh;
@@ -138,7 +115,7 @@ mkdir -p frames && ffmpeg -y -i "<VIDEO_URL>" -vf "fps=30,scale=1920:1080" -q:v 
     </div>
 
     <script type="module">
-        // ============ IDENTITY LAYER (CUSTOM MOTION LOGIC) ============
+        // ============ IDENTITY LAYER (CUSTOM LOGIC) ============
 
         // ============ FIXED TECHNICAL LAYER (ULTRA-LEAN RUNTIME) ============
         const canvas = document.getElementById('videoCanvas');
@@ -162,7 +139,6 @@ mkdir -p frames && ffmpeg -y -i "<VIDEO_URL>" -vf "fps=30,scale=1920:1080" -q:v 
             const res = await fetch(url);
             if (!res.ok) throw new Error(`فشل جلب الصوت: ${url}`);
             const arrayBuf = await res.arrayBuffer();
-            if (arrayBuf.byteLength < 1024) throw new Error(`حجم الملف صغير جداً: ${url}`);
             return getSharedAudioContext().decodeAudioData(arrayBuf);
         }
 
@@ -194,7 +170,9 @@ mkdir -p frames && ffmpeg -y -i "<VIDEO_URL>" -vf "fps=30,scale=1920:1080" -q:v 
             for (let i = 0; i < count; i++) {
                 const frameIndex = startFrame + i;
                 if (frameIndex >= window.__ofoqTotalFrames) break;
-                await drawSceneAtTime(frameIndex / window.__ofoqFps);
+                const timestamp = frameIndex / window.__ofoqFps;
+
+                await drawSceneAtTime(timestamp);
                 const dataUrl = canvas.toDataURL('image/png');
                 frames.push(dataUrl.substring(dataUrl.indexOf(',') + 1));
             }
@@ -263,6 +241,7 @@ mkdir -p frames && ffmpeg -y -i "<VIDEO_URL>" -vf "fps=30,scale=1920:1080" -q:v 
                 spinner.style.display = 'none';
                 window.renderStatus = 'ready';
                 await drawSceneAtTime(0);
+                startPreviewLoop();
             } catch (err) {
                 statusText.textContent = "حدث خطأ أثناء التحميل";
                 window.__renderError = err.message;
@@ -275,13 +254,49 @@ mkdir -p frames && ffmpeg -y -i "<VIDEO_URL>" -vf "fps=30,scale=1920:1080" -q:v 
 </html>
 ```
 
-*(ملاحظة اختيارية: في حال احتاج مشهد معين لخلفية فيديو B-roll، يتم إنشاؤه ببساطة بـ 4 أسطر داخل `prepareIdentity` الخاصة بالمشهد: `videoEl = document.createElement('video'); videoEl.src = '...'; videoEl.crossOrigin = 'anonymous'; await new Promise(r => videoEl.onloadeddata = r);` وفي دالة الرسم: `videoEl.currentTime = time; ctx.drawImage(videoEl, 0, 0, w, h);`)*
+---
+
+## 3. خطة التعامل المسبق مع فيديو الـ B-Roll في الكود
+
+### 3.1 في التيرمينال (قبل الرندر):
+يقوم الوكيل بفك فريمات الفيديو في مجلد `broll_frames/`:
+```bash
+mkdir -p broll_frames
+ffmpeg -i "<BROLL_VIDEO_URL>" -vf "fps=30,scale=1920:1080" -q:v 2 broll_frames/f_%04d.jpg
+```
+
+### 3.2 في كود `scene.html`:
+يتم استدعاء الفريمات مسبقاً في `prepareIdentity` ورسمها بسرعة صاروخية في `drawSceneAtTime`:
+```javascript
+const TOTAL_BROLL_FRAMES = 240; // مدة المشهد بالثواني × الـ fps
+const brollFrames = [];
+
+async function prepareIdentity() {
+    const promises = [];
+    for (let i = 1; i <= TOTAL_BROLL_FRAMES; i++) {
+        const num = String(i).padStart(4, '0');
+        const img = new Image();
+        img.src = `broll_frames/f_${num}.jpg`;
+        promises.push(new Promise(r => { img.onload = () => r(img); img.onerror = () => r(null); }));
+    }
+    const loaded = await Promise.all(promises);
+    brollFrames.push(...loaded.filter(Boolean));
+}
+
+async function drawSceneAtTime(time) {
+    const frameIdx = Math.floor(time * CONFIG.fps) % brollFrames.length;
+    const currentFrame = brollFrames[frameIdx];
+    if (currentFrame) {
+        ctx.drawImage(currentFrame, x, y, width, height);
+    }
+}
+```
 
 ---
 
-## 3. بروتوكول التحقق وفحص ما قبل الرندر (Pre-Flight Verification)
+## 4. بروتوكول التحقق وفحص ما قبل الرندر (Pre-Flight Verification)
 
-قبل بدء الرندر الكامل، أنشئ سكريبت فحص Headless للتحقق من أن `scene.html` خالي من الأخطاء وأن حالة `window.renderStatus` أصبحت `ready`:
+قبل بدء الرندر الكامل، أنشئ سكريبت فحص Headless للتأكد من طباعة `SCENE_OK`:
 
 ```js
 // _headless_check.js
@@ -294,7 +309,7 @@ const CHECK_TIMEOUT_MS = 15000;
 
 (async () => {
   const server = http.createServer((req, res) => {
-    fs.readFile(path.join(process.cwd(), req.url.split('?')[0]), (err, data) => {
+    fs.readFile(path.join(process.cwd(), decodeURIComponent(req.url.split('?')[0])), (err, data) => {
       if (err) { res.writeHead(404); res.end(); return; }
       res.writeHead(200); res.end(data);
     });
@@ -345,9 +360,9 @@ const CHECK_TIMEOUT_MS = 15000;
 
 ---
 
-## 4. محرك الرندر الشامل والدمج والتسليم (`render-runner.js` & Concat Engine)
+## 5. محرك الرندر الشامل والدمج والتسليم (`render-runner.js` & Concat Engine)
 
-### 4.1 سكريبت الرندر الشامل (`render-runner.js`)
+### 5.1 سكريبت الرندر الشامل (`render-runner.js`)
 ```js
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
@@ -518,7 +533,7 @@ function writeWithBackpressure(stream, buffer) {
 
 ---
 
-### 4.2 محرك دمج المقاطع المتعددة (Multi-Video Concat Protocol)
+### 5.2 محرك دمج المقاطع المتعددة (Multi-Video Concat Protocol)
 عند رندر عدة مشاهد متتالية والمطلوب دمجها في فيديو نهائي موحد:
 1. يتم إنشاء ملف نصي `concat_list.txt` يحتوي على أسماء المقاطع بالترتيب الدقيق:
    ```bash
@@ -539,8 +554,8 @@ function writeWithBackpressure(stream, buffer) {
 
 ---
 
-### 4.3 القواعد الصارمة للتسليم والتوثيق
-1. **الامتثال التام للطلب**: تنفيذ طلب المستخدم بدقة سواء كان رندر مشهد مفرد أو مشاهد متعددة مع الدمج.
+### 5.3 القواعد الصارمة للتسليم والتوثيق
+1. **الامتثال التام للطلب**: فك إطارات الـ B-roll مسبقاً بـ `ffmpeg` قبل الرندر كلما تطلب المشهد فيديو خارجي.
 2. **منع البيانات الوهمية**: لا تلفق أي فحص؛ إذا فشل فحص الـ Headless أصلح الخطأ فوراً قبل الرندر.
 3. **التسليم الكامل للـ Release**: أنشئ الـ Release وارفع كافة المقاطع المفردة، الفيديو النهائي المدمج، ملف الوصف، وكود `scene.html` إلى الـ Release وسجل ملف الإنجاز `TASK_COMPLETE.json`.
 ```
