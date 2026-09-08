@@ -1,26 +1,41 @@
 
-### 📄 ملف `AGENTS.md` المحدث بالكامل:
-
 ```markdown
-# AGENTS.md — دليل الوكيل لإنتاج ورندر الفيديوهات (B-Roll & Multi-Scene Engine)
+# AGENTS.md — دليل الوكيل لإنتاج ورندر الفيديوهات (Execution, Batch & Concat Engine)
 
 > ⚠️ **تحذير حاسم**: أمر `node agent.js` ليس أداة رندر وتشغيله من داخل الجلسة سيعيد تشغيل الوكيل من الصفر ويدمر تقدمك بالكامل. عملية الرندر تتم حصرياً عبر تشغيل سكريبت `render-runner.js` الموضح في القسم 4 بأمر: `node render-runner.js`.
 
 ---
 
-## 1. دور الوكيل ومعمارية التعامل مع الأصول (B-Roll & Audio Pipelines)
+## 1. دور الوكيل وأنماط المدخلات المدعومة (Agent Mandate & Input Modes)
 
-أنت **عقل تنفيذي ومحرك إنتاج برمجي** مسؤول عن استقبال المشاهد، تهيئة مواردها محلياً، ورندرتها بدقة فائقة عبر المتصفح و `ffmpeg`.
+أنت **عقل تنفيذي ومحرك إنتاج برمجي** مسؤول عن استقبال كود المشاهد أو روابطها أو ملفات الهوية، ورندرتها بدقة عالية عبر المتصفح ومحرك `ffmpeg`، واستخراج مقاطع الفيديو ودمجها ورفعها على GitHub Release.
 
-### 🚀 القاعدة الذهبية لمعالجة الـ B-Roll (مثل الصوت تماماً):
-* **حظر تشغيل الفيديوهات الخام داخل المتصفح أثناء الرندر**: لا تستخدم عنصر `<video>` أو أوامر الـ `seek` لفك فريمات الـ B-Roll داخل الكانفاس لتجنب بطء التشفير وتلوث الـ CORS.
-* **الفك المسبق للفريمات (Pre-Extracted Frames)**: إذا كان المشهد يحتوي على فيديو B-roll، يقوم الوكيل قبل تشغيل الرندر بتنزيل الفيديو وفك إطاراته مسبقاً عبر `ffmpeg` إلى مجلد محلي `broll_frames/` بدقة المشهد ونفس معدل الـ `fps`، ويجعل الكانفاس يستدعي الصور المحلية في الوقت المحدد برمجياً.
+### يتعامل الوكيل مع 4 أنماط من المدخلات بمرونة تامة:
 
-### أنماط المدخلات المدعومة:
-1. **كود HTML مباشر**: حفظه في `scene.html` ثم بدء المعالجة.
-2. **رابط Raw مفرد**: جلبه بأمر `curl -fsSL "<URL>" -o scene.html`.
-3. **روابط Raw متعددة**: فك أصول كل مشهد، رندرتها تسلسلياً (`part_1.mp4`, `part_2.mp4`...) ثم دمجها تلقائياً بـ `ffmpeg concat`.
-4. **بناء من ملف هوية في `identities/`**: قراءة الوصف البصري وكتابة المشهد من الصفر.
+#### 🔹 النمط (أ) — كود HTML مباشر (Direct Code Paste):
+* إذا قام المستخدم بلصق كود المشهد مباشرة في المحادثة:
+  1. احفظ الكود فوراً في ملف `scene.html`.
+  2. انتقل لخطوة فحص الـ Headless ثم الرندر المباشر.
+
+#### 🔹 النمط (ب) — رابط Raw مفرد (Single Raw URL):
+* إذا أرسل المستخدم رابطاً مباشراً لكود المشهد (مثل GitHub Raw, Gist, Pastebin):
+  1. قم بجلب محتوى الرابط وحفظه فوراً في ملف `scene.html` بأمر:
+     ```bash
+     curl -fsSL "<RAW_URL>" -o scene.html
+     ```
+  2. انتقل لخطوة فحص الـ Headless ثم الرندر المباشر.
+
+#### 🔹 النمط (ج) — روابط Raw متعددة مع طلب الدمج (Multi-Scene Batch & Concat):
+* إذا أرسل المستخدم قائمة بروابط Raw لعدة مشاهد وطلب رندر كل مشهد ودمجهم بالترتيب:
+  1. **حلقة الرندر التسلسلي**:
+     - المشهد الأول: جلب الرابط الأول ➔ حفظه كـ `scene.html` ➔ فحصه ➔ رندره كـ `part_1.mp4`.
+     - المشهد الثاني: جلب الرابط الثاني ➔ حفظه كـ `scene.html` ➔ فحصه ➔ رندره كـ `part_2.mp4`.
+     - تكرار العملية لجميع المشاهد بالترتيب المطلوب (`part_3.mp4`, `part_4.mp4`...).
+  2. **الدمج التلقائي السلس**: دمج جميع المقاطع بالترتيب عبر محرك الدمج الموضح في القسم 4 لاستخراج `final_merged_video.mp4`.
+  3. رفع المقاطع المفردة + الفيديو النهائي المدمج على الـ Release.
+
+#### 🔹 النمط (د) — بناء المشهد من ملف هوية (`identities/<name>.md`):
+* إذا طلب المستخدم بناء مشهد من ملف هوية: اقرأ المواصفات البصرية، ابنِ كود `scene.html` كاملاً، افحصه ورندره.
 
 ---
 
@@ -31,9 +46,9 @@
 - `CONFIG`: `{ fps: 30, width: number, height: number, duration: number }`.
 - `OUTPUT_FILENAME`: اسم الملف المصدر كنص بدون امتداد.
 - `audioBuffer`: كائن `AudioBuffer` أو `null` صراحة عند عدم وجود صوت.
-- `async function prepareIdentity()`: دالة التهيئة والتحميل غير المتزامن للصور والأصول المحلية.
+- `async function prepareIdentity()`: دالة التهيئة والتحميل غير المتزامن للأصول والخطوط.
 - `async function drawSceneAtTime(time)`: دالة الرسم اللحظية الأساسية لكل فريم (دائماً `async`).
-- **الأدوات المتاحة تلقائياً**: `ctx`, `clamp01(val)`, `fetchAndDecodeAudio(url)`.
+- **الأدوات المتاحة تلقائياً**: `ctx`, `layoutArabicParagraph(...)`, `clamp01(val)`, `fetchAndDecodeAudio(url)`, `concatenateAudioBuffers(buffers)`, `createBrollFrameSampler(url, options?)`.
 
 ### 2.2 قالب HTML والطبقة التقنية الثابتة المتجاوبة (Fixed Shell)
 
@@ -45,7 +60,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><!-- IDENTITY: SCENE TITLE --></title>
 
-    <!-- روابط الخطوط الرسمية -->
+    <!-- FONT IMPORTS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
@@ -102,6 +117,24 @@
         .btn-preview:hover { background: rgba(255, 255, 255, 0.22); }
         .btn-render { background: #0a0f1d; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); }
         .btn-render:hover { background: #1e293b; }
+        #console-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 680px; max-width: 92vw; height: 400px; background: #090d16;
+            border: 1px solid #1e293b; border-radius: 14px; box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+            z-index: 100; display: none; flex-direction: column; overflow: hidden;
+        }
+        #console-header {
+            background: #151d2d; padding: 12px 18px; display: flex;
+            justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold;
+        }
+        #console-output {
+            flex: 1; padding: 14px; overflow-y: auto; font-family: monospace;
+            font-size: 12px; color: #cbd5e1; background: #060910; line-height: 1.6;
+        }
+        .log-line { margin-bottom: 4px; }
+        .log-info { color: #38bdf8; }
+        .log-warn { color: #facc15; }
+        .log-error { color: #f87171; }
     </style>
 </head>
 <body>
@@ -110,53 +143,101 @@
         <div id="hud"><div class="spinner" id="spinner"></div><span id="status-text">جاري إعداد المشهد...</span></div>
         <div id="controls-overlay">
             <button class="btn btn-preview" id="btn-replay"><i class="ph ph-arrow-counter-clockwise"></i> تشغيل المعاينة</button>
+            <button class="btn btn-preview" id="btn-toggle-console"><i class="ph ph-terminal-window"></i> سجل الأخطاء</button>
             <button class="btn btn-render" id="btn-render-start"><i class="ph-fill ph-video-camera"></i> تصدير الفيديو</button>
         </div>
     </div>
 
-    <script type="module">
-        // ============ IDENTITY LAYER (CUSTOM LOGIC) ============
+    <div id="console-modal">
+        <div id="console-header">
+            <span><i class="ph ph-terminal-window"></i> سجل النظام والعمليات البرمجية</span>
+            <button class="btn btn-preview" id="btn-close-console" style="color:#fff; background:#ef4444; border:none; padding:4px 14px;">إغلاق</button>
+        </div>
+        <div id="console-output"></div>
+    </div>
 
-        // ============ FIXED TECHNICAL LAYER (ULTRA-LEAN RUNTIME) ============
+    <script type="module">
+        // ============ IDENTITY LAYER (CUSTOM MOTION CODE) ============
+
+        // ============ FIXED TECHNICAL LAYER (RUNTIME ENGINE) ============
         const canvas = document.getElementById('videoCanvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         const statusText = document.getElementById('status-text');
         const spinner = document.getElementById('spinner');
 
-        let audioAudioEl = null, sharedAudioCtx = null;
+        let audioAudioEl = null;
+        let sharedAudioCtx = null;
         let state = { currentTime: 0, isRendering: false, animationFrameId: null };
 
         window.renderStatus = 'loading';
-        function clamp01(val) { return Math.max(0, Math.min(1, val)); }
 
-        function getSharedAudioContext() {
-            if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            return sharedAudioCtx;
+        function logToConsole(msg, type = 'info') {
+            const output = document.getElementById('console-output');
+            const line = document.createElement('div');
+            line.className = `log-line log-${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
         }
 
-        async function fetchAndDecodeAudio(url) {
-            if (!/^https:\/\//i.test(url)) throw new Error(`رابط صوت غير آمن: ${url}`);
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`فشل جلب الصوت: ${url}`);
-            const arrayBuf = await res.arrayBuffer();
-            return getSharedAudioContext().decodeAudioData(arrayBuf);
+        function clamp01(val) { return Math.max(0, Math.min(1, val)); }
+
+        function layoutArabicParagraph(text, font, maxWidth, wordGap, lineHeight, centerY) {
+            ctx.font = font;
+            const words = text.split(' ');
+            const lines = [];
+            let currentWords = [], currentWidth = 0;
+
+            words.forEach(w => {
+                const wordWidth = ctx.measureText(w).width;
+                const testWidth = currentWidth + (currentWords.length > 0 ? wordGap : 0) + wordWidth;
+                if (testWidth > maxWidth && currentWords.length > 0) {
+                    lines.push({ words: currentWords, width: currentWidth });
+                    currentWords = []; currentWidth = 0;
+                }
+                currentWords.push({ text: w, width: wordWidth });
+                currentWidth += (currentWords.length > 1 ? wordGap : 0) + wordWidth;
+            });
+            if (currentWords.length) lines.push({ words: currentWords, width: currentWidth });
+
+            const totalHeight = lines.length * lineHeight;
+            const startY = centerY - totalHeight / 2 + lineHeight / 2;
+            const flatWords = [];
+
+            lines.forEach((line, li) => {
+                const lineY = startY + li * lineHeight;
+                let currentX = (CONFIG.width / 2) + (line.width / 2);
+                line.words.forEach(w => {
+                    const wx = currentX - w.width;
+                    flatWords.push({ text: w.text, x: wx + w.width / 2, y: lineY });
+                    currentX -= (w.width + wordGap);
+                });
+            });
+            return flatWords;
         }
 
         function audioBufferToWavBlob(buffer) {
-            const numOfChan = buffer.numberOfChannels, length = buffer.length * numOfChan * 2 + 44;
+            const numOfChan = buffer.numberOfChannels;
+            const length = buffer.length * numOfChan * 2 + 44;
             const out = new DataView(new ArrayBuffer(length));
             let channels = [], sample, offset = 0, pos = 0;
-            function set16(d) { out.setUint16(pos, d, true); pos += 2; }
-            function set32(d) { out.setUint32(pos, d, true); pos += 4; }
-            set32(0x46464952); set32(length - 8); set32(0x45564157); set32(0x20746d66);
-            set32(16); set16(1); set16(numOfChan); set32(buffer.sampleRate);
-            set32(buffer.sampleRate * 2 * numOfChan); set16(numOfChan * 2); set16(16);
-            set32(0x61746164); set32(length - pos - 4);
-            for (let i = 0; i < numOfChan; i++) channels.push(buffer.getChannelData(i));
+
+            function setUint16(data) { out.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { out.setUint32(pos, data, true); pos += 4; }
+
+            setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
+            setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
+            setUint32(buffer.sampleRate); setUint32(buffer.sampleRate * 2 * numOfChan);
+            setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164);
+            setUint32(length - pos - 4);
+
+            for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
+
             while (offset < buffer.length) {
                 for (let i = 0; i < numOfChan; i++) {
                     sample = Math.max(-1, Math.min(1, channels[i][offset]));
-                    out.setInt16(pos, (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0, true);
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+                    out.setInt16(pos, sample, true);
                     pos += 2;
                 }
                 offset++;
@@ -164,26 +245,119 @@
             return new Blob([out], { type: "audio/wav" });
         }
 
-        // محرك تسليم الفريمات بالدفعات السريعة لـ Node.js
-        window.__ofoqGetFrameBatch = async function(startFrame, count) {
-            const frames = [];
-            for (let i = 0; i < count; i++) {
-                const frameIndex = startFrame + i;
-                if (frameIndex >= window.__ofoqTotalFrames) break;
-                const timestamp = frameIndex / window.__ofoqFps;
+        function getSharedAudioContext() {
+            if (!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return sharedAudioCtx;
+        }
 
-                await drawSceneAtTime(timestamp);
-                const dataUrl = canvas.toDataURL('image/png');
-                frames.push(dataUrl.substring(dataUrl.indexOf(',') + 1));
+        async function fetchAndDecodeAudio(url) {
+            if (!/^https:\/\//i.test(url)) throw new Error(`رابط غير آمن: ${url}`);
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`فشل جلب الصوت: ${url}`);
+            const arrayBuf = await res.arrayBuffer();
+            if (arrayBuf.byteLength < 1024) throw new Error(`حجم الملف صغير جداً: ${url}`);
+            return getSharedAudioContext().decodeAudioData(arrayBuf);
+        }
+
+        function concatenateAudioBuffers(buffers) {
+            if (!buffers || buffers.length === 0) throw new Error("لا يوجد AudioBuffer للتجميع");
+            const sampleRate = buffers[0].sampleRate;
+            const channelsCount = buffers[0].numberOfChannels;
+            const totalSamples = buffers.reduce((sum, b) => sum + b.length, 0);
+            const combined = getSharedAudioContext().createBuffer(channelsCount, totalSamples, sampleRate);
+
+            let sampleOffset = 0, timeOffset = 0.0;
+            const segments = [];
+
+            for (const buf of buffers) {
+                for (let ch = 0; ch < channelsCount; ch++) {
+                    combined.getChannelData(ch).set(buf.getChannelData(ch), sampleOffset);
+                }
+                const duration = buf.duration;
+                segments.push({ start: timeOffset, end: timeOffset + duration, duration });
+                sampleOffset += buf.length;
+                timeOffset += duration;
             }
-            return frames;
-        };
+            return { buffer: combined, segments };
+        }
+
+        async function createBrollFrameSampler(url, options = {}) {
+            const videoEl = document.createElement('video');
+            videoEl.crossOrigin = 'anonymous'; videoEl.muted = true;
+            videoEl.playsInline = true; videoEl.preload = 'auto'; videoEl.src = url;
+
+            await new Promise((resolve, reject) => {
+                videoEl.onloadeddata = resolve;
+                videoEl.onerror = () => reject(new Error(`فشل تحميل فيديو B-roll: ${url}`));
+            });
+
+            const targetW = options.width || videoEl.videoWidth;
+            const targetH = options.height || videoEl.videoHeight;
+            const fit = options.fit || 'cover';
+            const sampleCanvas = document.createElement('canvas');
+            sampleCanvas.width = targetW; sampleCanvas.height = targetH;
+            const sampleCtx = sampleCanvas.getContext('2d');
+
+            sampleCtx.drawImage(videoEl, 0, 0, 1, 1);
+            let corsOk = true;
+            try { sampleCtx.getImageData(0, 0, 1, 1); } catch (e) { corsOk = false; }
+
+            if (!corsOk && options.posterFallbackUrl) {
+                const posterImg = new Image(); posterImg.crossOrigin = 'anonymous';
+                await new Promise((resolve, reject) => {
+                    posterImg.onload = resolve;
+                    posterImg.onerror = () => reject(new Error(`فشل تحميل صورة fallback: ${options.posterFallbackUrl}`));
+                    posterImg.src = options.posterFallbackUrl;
+                });
+                return {
+                    videoEl: null, isFallbackImage: true,
+                    async getFrameAt(time) {
+                        const zoom = 1.0 + Math.min(time / 10, 1) * 0.06;
+                        const iw = posterImg.naturalWidth, ih = posterImg.naturalHeight;
+                        const scale = Math.max(targetW / iw, targetH / ih) * zoom;
+                        const dw = iw * scale, dh = ih * scale;
+                        const dx = (targetW - dw) / 2, dy = (targetH - dh) / 2;
+                        sampleCtx.clearRect(0, 0, targetW, targetH);
+                        sampleCtx.drawImage(posterImg, dx, dy, dw, dh);
+                        return sampleCanvas;
+                    }
+                };
+            }
+
+            if (!corsOk) throw new Error(`فيديو B-roll لا يدعم CORS: ${url}`);
+            const useFrameCallback = typeof videoEl.requestVideoFrameCallback === 'function';
+
+            return {
+                videoEl,
+                async getFrameAt(time) {
+                    const seekTime = Math.min(Math.max(time, 0), Math.max(videoEl.duration - 0.01, 0));
+                    await new Promise((resolve, reject) => {
+                        const timeoutId = setTimeout(() => reject(new Error(`تأخر الفريم عند ${seekTime}s: ${url}`)), 5000);
+                        if (useFrameCallback) {
+                            videoEl.requestVideoFrameCallback(() => { clearTimeout(timeoutId); resolve(); });
+                        } else {
+                            videoEl.onseeked = () => { clearTimeout(timeoutId); resolve(); };
+                        }
+                        videoEl.currentTime = seekTime;
+                    });
+
+                    const vw = videoEl.videoWidth, vh = videoEl.videoHeight;
+                    const scale = fit === 'contain' ? Math.min(targetW / vw, targetH / vh) : Math.max(targetW / vw, targetH / vh);
+                    const dw = vw * scale, dh = vh * scale;
+                    const dx = (targetW - dw) / 2, dy = (targetH - dh) / 2;
+
+                    sampleCtx.clearRect(0, 0, targetW, targetH);
+                    sampleCtx.drawImage(videoEl, dx, dy, dw, dh);
+                    return sampleCanvas;
+                }
+            };
+        }
 
         function startPreviewLoop() {
             if (state.animationFrameId) cancelAnimationFrame(state.animationFrameId);
             if (audioAudioEl) {
                 audioAudioEl.currentTime = 0;
-                audioAudioEl.play().catch(() => {});
+                audioAudioEl.play().catch(e => logToConsole("تنبيه الصوت: " + e.message, 'warn'));
             }
 
             const startTime = performance.now();
@@ -204,14 +378,53 @@
             state.animationFrameId = requestAnimationFrame(loop);
         }
 
+        const OFOQ_FRAME_FORMAT = 'image/png';
+        window.__ofoqTotalFrames = 0;
+        window.__ofoqFps = 0;
+        window.__ofoqOutputFilename = '';
+        window.__ofoqAudioWavBase64 = null;
+
+        async function __ofoqGetFrameBatch(startFrame, count) {
+            const frames = [];
+            for (let i = 0; i < count; i++) {
+                const frameIndex = startFrame + i;
+                if (frameIndex >= window.__ofoqTotalFrames) break;
+                const timestamp = frameIndex / window.__ofoqFps;
+                await drawSceneAtTime(timestamp);
+                const dataUrl = canvas.toDataURL(OFOQ_FRAME_FORMAT);
+                frames.push(dataUrl.substring(dataUrl.indexOf(',') + 1));
+            }
+            return frames;
+        }
+        window.__ofoqGetFrameBatch = __ofoqGetFrameBatch;
+
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const chunkSize = 0x8000;
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+            }
+            return btoa(binary);
+        }
+
         document.getElementById('btn-replay').addEventListener('click', () => {
             statusText.textContent = "جاري عرض المعاينة...";
             spinner.style.display = 'inline-block';
             startPreviewLoop();
         });
 
+        document.getElementById('btn-toggle-console').addEventListener('click', () => {
+            const modal = document.getElementById('console-modal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        document.getElementById('btn-close-console').addEventListener('click', () => {
+            document.getElementById('console-modal').style.display = 'none';
+        });
+
         document.getElementById('btn-render-start').addEventListener('click', () => {
-            alert("التصدير الفعلي يتم عبر تشغيل سكريبت render-runner.js");
+            logToConsole("التصدير الفعلي يتم عبر render-runner.js (Node + ffmpeg).", 'warn');
         });
 
         async function init() {
@@ -231,18 +444,15 @@
                 if (audioBuffer) {
                     const wavBlob = audioBufferToWavBlob(audioBuffer);
                     audioAudioEl = new Audio(URL.createObjectURL(wavBlob));
-                    const buf = await wavBlob.arrayBuffer();
-                    let bin = '', bytes = new Uint8Array(buf);
-                    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
-                    window.__ofoqAudioWavBase64 = btoa(bin);
+                    window.__ofoqAudioWavBase64 = arrayBufferToBase64(await wavBlob.arrayBuffer());
                 }
 
                 statusText.textContent = "جاهز للعرض والتصدير ✓";
                 spinner.style.display = 'none';
                 window.renderStatus = 'ready';
                 await drawSceneAtTime(0);
-                startPreviewLoop();
             } catch (err) {
+                logToConsole("خطأ أثناء التهيئة: " + err.message, 'error');
                 statusText.textContent = "حدث خطأ أثناء التحميل";
                 window.__renderError = err.message;
                 window.renderStatus = 'error';
@@ -256,47 +466,9 @@
 
 ---
 
-## 3. خطة التعامل المسبق مع فيديو الـ B-Roll في الكود
+## 3. بروتوكول التحقق وفحص ما قبل الرندر (Pre-Flight Verification)
 
-### 3.1 في التيرمينال (قبل الرندر):
-يقوم الوكيل بفك فريمات الفيديو في مجلد `broll_frames/`:
-```bash
-mkdir -p broll_frames
-ffmpeg -i "<BROLL_VIDEO_URL>" -vf "fps=30,scale=1920:1080" -q:v 2 broll_frames/f_%04d.jpg
-```
-
-### 3.2 في كود `scene.html`:
-يتم استدعاء الفريمات مسبقاً في `prepareIdentity` ورسمها بسرعة صاروخية في `drawSceneAtTime`:
-```javascript
-const TOTAL_BROLL_FRAMES = 240; // مدة المشهد بالثواني × الـ fps
-const brollFrames = [];
-
-async function prepareIdentity() {
-    const promises = [];
-    for (let i = 1; i <= TOTAL_BROLL_FRAMES; i++) {
-        const num = String(i).padStart(4, '0');
-        const img = new Image();
-        img.src = `broll_frames/f_${num}.jpg`;
-        promises.push(new Promise(r => { img.onload = () => r(img); img.onerror = () => r(null); }));
-    }
-    const loaded = await Promise.all(promises);
-    brollFrames.push(...loaded.filter(Boolean));
-}
-
-async function drawSceneAtTime(time) {
-    const frameIdx = Math.floor(time * CONFIG.fps) % brollFrames.length;
-    const currentFrame = brollFrames[frameIdx];
-    if (currentFrame) {
-        ctx.drawImage(currentFrame, x, y, width, height);
-    }
-}
-```
-
----
-
-## 4. بروتوكول التحقق وفحص ما قبل الرندر (Pre-Flight Verification)
-
-قبل بدء الرندر الكامل، أنشئ سكريبت فحص Headless للتأكد من طباعة `SCENE_OK`:
+قبل بدء الرندر الكامل، أنشئ سكريبت فحص Headless للتحقق من أن `scene.html` خالي من الأخطاء وأن حالة `window.renderStatus` أصبحت `ready`:
 
 ```js
 // _headless_check.js
@@ -309,7 +481,7 @@ const CHECK_TIMEOUT_MS = 15000;
 
 (async () => {
   const server = http.createServer((req, res) => {
-    fs.readFile(path.join(process.cwd(), decodeURIComponent(req.url.split('?')[0])), (err, data) => {
+    fs.readFile(path.join(process.cwd(), req.url.split('?')[0]), (err, data) => {
       if (err) { res.writeHead(404); res.end(); return; }
       res.writeHead(200); res.end(data);
     });
@@ -360,9 +532,9 @@ const CHECK_TIMEOUT_MS = 15000;
 
 ---
 
-## 5. محرك الرندر الشامل والدمج والتسليم (`render-runner.js` & Concat Engine)
+## 4. محرك الرندر الشامل والدمج والتسليم (`render-runner.js` & Concat Engine)
 
-### 5.1 سكريبت الرندر الشامل (`render-runner.js`)
+### 4.1 سكريبت الرندر الشامل (`render-runner.js`)
 ```js
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
@@ -533,7 +705,7 @@ function writeWithBackpressure(stream, buffer) {
 
 ---
 
-### 5.2 محرك دمج المقاطع المتعددة (Multi-Video Concat Protocol)
+### 4.2 محرك دمج المقاطع المتعددة (Multi-Video Concat Protocol)
 عند رندر عدة مشاهد متتالية والمطلوب دمجها في فيديو نهائي موحد:
 1. يتم إنشاء ملف نصي `concat_list.txt` يحتوي على أسماء المقاطع بالترتيب الدقيق:
    ```bash
@@ -547,15 +719,15 @@ function writeWithBackpressure(stream, buffer) {
    ```bash
    ffmpeg -f concat -safe 0 -i concat_list.txt -c copy final_merged_video.mp4
    ```
-3. (في حال وجود تباين طفيف في إعدادات الصوت بين المشاهد، يتم استخدام أمر إعادة الترميز المتوافق):
+3. (في حال اختلاف طفيف في إعدادات الصوت بين المشاهد، يتم استخدام إعادة الترميز المتوافقة):
    ```bash
    ffmpeg -f concat -safe 0 -i concat_list.txt -c:v libx264 -pix_fmt yuv420p -crf 18 -c:a aac -b:a 192k final_merged_video.mp4
    ```
 
 ---
 
-### 5.3 القواعد الصارمة للتسليم والتوثيق
-1. **الامتثال التام للطلب**: فك إطارات الـ B-roll مسبقاً بـ `ffmpeg` قبل الرندر كلما تطلب المشهد فيديو خارجي.
+### 4.3 القواعد الصارمة للتسليم والتوثيق
+1. **الامتثال التام للطلب**: تنفيذ طلب المستخدم بدقة سواء كان رندر مشهد مفرد أو مشاهد متعددة مع الدمج.
 2. **منع البيانات الوهمية**: لا تلفق أي فحص؛ إذا فشل فحص الـ Headless أصلح الخطأ فوراً قبل الرندر.
-3. **التسليم الكامل للـ Release**: أنشئ الـ Release وارفع كافة المقاطع المفردة، الفيديو النهائي المدمج، ملف الوصف، وكود `scene.html` إلى الـ Release وسجل ملف الإنجاز `TASK_COMPLETE.json`.
+3. **التسليم الكامل للـ Release**: ارفع كافة المقاطع المفردة، الفيديو النهائي المدمج، ملف الوصف، وكود `scene.html` إلى الـ Release وسجل ملف الإنجاز `TASK_COMPLETE.json`.
 ```
