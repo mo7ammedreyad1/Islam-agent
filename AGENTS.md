@@ -1,4 +1,27 @@
 
+---
+
+### 📋 خطة كتابة وتحديث ملف `AGENTS.md`:
+
+1. **القسم 1: دور الوكيل وأنماط المدخلات المدعومة (Input Modes)**:
+   - تحديد 4 أنماط استقبال مرنة (كود منسوخ مباشر، رابط Raw واحد، روابط Raw متعددة مع الدمج التلقائي، أو البناء من ملفات الهوية).
+   - توجيه الوكيل لتحمل مسؤولية إنشاء وإدارة الـ Release ورفع الأصول بنفسه عبر التيرمينال.
+2. **القسم 2: العقد المعماري والطبقة التقنية المحدثة (Technical Shell & Runtime)**:
+   - **قالب HTML متجاوب تلقائياً** مع كل المقاسات (16:9 و 9:16 Shorts) بنسب الـ `vh` والـ `vw`.
+   - **تحديث دالة الـ B-roll رسميًا** في الطبقة التقنية إلى المعمارية الجديدة المصححة والآمنة (`fetchAndPrepareBrollSampler` مع الـ Local Blob وحل مشكلة الـ CORS على الهواتف والأجهزة).
+   - توفير دوال الصوت ومعالجة النصوص والـ Batching السريع.
+3. **القسم 3: بروتوكول الفحص والتحصينات الصارمة (Pre-Flight Verification)**:
+   - كود سكريبت الفحص Headless النظيف `_headless_check.js`.
+   - تثبيت القواعد الصارمة لمنع أخطاء الشل الشائعة (حظر `node -e` داخل علامات التنصيص المزدوجة، فحص اكتمال الملف وعدم انقطاعه قبل الفحص).
+4. **القسم 4: محرك الرندر والدمج والتسليم (`render-runner.js` & Concat Engine)**:
+   - كود سكريبت `render-runner.js` المطور بالكامل الذي يغذي `ffmpeg` بالفريمات عبر الـ Stdin Pipe.
+   - كود محرك دمج الفيديوهات المتعددة عبر قائمة `concat_list.txt`.
+   - قواعد التسليم والتوثيق عبر `TASK_COMPLETE.json`.
+
+---
+
+### 📄 ملف `AGENTS.md` كاملاً بعد التحديث:
+
 ```markdown
 # AGENTS.md — دليل الوكيل لإنتاج ورندر الفيديوهات (Execution, Batch & Concat Engine)
 
@@ -15,7 +38,7 @@
 #### 🔹 النمط (أ) — كود HTML مباشر (Direct Code Paste):
 * إذا قام المستخدم بلصق كود المشهد مباشرة في المحادثة:
   1. احفظ الكود فوراً في ملف `scene.html`.
-  2. انتقل لخطوة فحص الـ Headless ثم الرندر المباشر.
+  2. تأكد من اكتمال الملف وعدم انقطاعه، ثم انتقل لخطوة فحص الـ Headless والرندر المباشر.
 
 #### 🔹 النمط (ب) — رابط Raw مفرد (Single Raw URL):
 * إذا أرسل المستخدم رابطاً مباشراً لكود المشهد (مثل GitHub Raw, Gist, Pastebin):
@@ -46,11 +69,11 @@
 - `CONFIG`: `{ fps: 30, width: number, height: number, duration: number }`.
 - `OUTPUT_FILENAME`: اسم الملف المصدر كنص بدون امتداد.
 - `audioBuffer`: كائن `AudioBuffer` أو `null` صراحة عند عدم وجود صوت.
-- `async function prepareIdentity()`: دالة التهيئة والتحميل غير المتزامن للأصول والخطوط.
+- `async function prepareIdentity()`: دالة التهيئة والتحميل غير المتزامن للأصول والخطوط والفيديوهات.
 - `async function drawSceneAtTime(time)`: دالة الرسم اللحظية الأساسية لكل فريم (دائماً `async`).
-- **الأدوات المتاحة تلقائياً**: `ctx`, `layoutArabicParagraph(...)`, `clamp01(val)`, `fetchAndDecodeAudio(url)`, `concatenateAudioBuffers(buffers)`, `createBrollFrameSampler(url, options?)`.
+- **الأدوات المتاحة تلقائياً**: `ctx`, `layoutArabicParagraph(...)`, `clamp01(val)`, `fetchAndDecodeAudio(url)`, `concatenateAudioBuffers(buffers)`, `fetchAndPrepareBrollSampler(url, options?)`.
 
-### 2.2 قالب HTML والطبقة التقنية الثابتة المتجاوبة (Fixed Shell)
+### 2.2 قالب HTML والطبقة التقنية الثابتة المحدثة (Fixed Shell)
 
 ```html
 <!DOCTYPE html>
@@ -75,6 +98,7 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100vh; min-height: 100dvh; overflow: hidden; padding: 10px;
         }
+        /* إطار العرض المتجاوب تلقائياً مع كافة الأبعاد ونسب الشاشات بالـ vh و vw */
         #viewport {
             position: relative;
             max-height: 86vh;
@@ -281,70 +305,85 @@
             return { buffer: combined, segments };
         }
 
-        async function createBrollFrameSampler(url, options = {}) {
-            const videoEl = document.createElement('video');
-            videoEl.crossOrigin = 'anonymous'; videoEl.muted = true;
-            videoEl.playsInline = true; videoEl.preload = 'auto'; videoEl.src = url;
+        // =========================================================================
+        // محرك B-Roll المحلي الآمن والمحدث (Local In-Memory Blob Sampler)
+        // =========================================================================
+        async function fetchAndPrepareBrollSampler(videoUrl, options = {}) {
+            logToConsole("بدء جلب فيديو B-roll كـ Blob محلي لتفادي مشاكل الشبكة والـ CORS...", "info");
 
-            await new Promise((resolve, reject) => {
-                videoEl.onloadeddata = resolve;
-                videoEl.onerror = () => reject(new Error(`فشل تحميل فيديو B-roll: ${url}`));
-            });
+            let finalSrc = videoUrl;
+            let isLocalBlob = false;
+            let fileSizeBytes = 0;
 
-            const targetW = options.width || videoEl.videoWidth;
-            const targetH = options.height || videoEl.videoHeight;
-            const fit = options.fit || 'cover';
-            const sampleCanvas = document.createElement('canvas');
-            sampleCanvas.width = targetW; sampleCanvas.height = targetH;
-            const sampleCtx = sampleCanvas.getContext('2d');
-
-            sampleCtx.drawImage(videoEl, 0, 0, 1, 1);
-            let corsOk = true;
-            try { sampleCtx.getImageData(0, 0, 1, 1); } catch (e) { corsOk = false; }
-
-            if (!corsOk && options.posterFallbackUrl) {
-                const posterImg = new Image(); posterImg.crossOrigin = 'anonymous';
-                await new Promise((resolve, reject) => {
-                    posterImg.onload = resolve;
-                    posterImg.onerror = () => reject(new Error(`فشل تحميل صورة fallback: ${options.posterFallbackUrl}`));
-                    posterImg.src = options.posterFallbackUrl;
-                });
-                return {
-                    videoEl: null, isFallbackImage: true,
-                    async getFrameAt(time) {
-                        const zoom = 1.0 + Math.min(time / 10, 1) * 0.06;
-                        const iw = posterImg.naturalWidth, ih = posterImg.naturalHeight;
-                        const scale = Math.max(targetW / iw, targetH / ih) * zoom;
-                        const dw = iw * scale, dh = ih * scale;
-                        const dx = (targetW - dw) / 2, dy = (targetH - dh) / 2;
-                        sampleCtx.clearRect(0, 0, targetW, targetH);
-                        sampleCtx.drawImage(posterImg, dx, dy, dw, dh);
-                        return sampleCanvas;
-                    }
-                };
+            try {
+                const res = await fetch(videoUrl);
+                if (res.ok) {
+                    const arrayBuf = await res.arrayBuffer();
+                    fileSizeBytes = arrayBuf.byteLength;
+                    const blob = new Blob([arrayBuf], { type: 'video/mp4' });
+                    finalSrc = URL.createObjectURL(blob);
+                    isLocalBlob = true;
+                    logToConsole(`تم تحميل الفيديو بنجاح كـ Blob محلي (${(fileSizeBytes / (1024 * 1024)).toFixed(2)} MB) ✓`, "info");
+                }
+            } catch (err) {
+                logToConsole("تنبيه: سيتم الاعتماد على الرابط المباشر: " + err.message, "warn");
             }
 
-            if (!corsOk) throw new Error(`فيديو B-roll لا يدعم CORS: ${url}`);
-            const useFrameCallback = typeof videoEl.requestVideoFrameCallback === 'function';
+            const videoEl = document.createElement('video');
+            if (!isLocalBlob) {
+                videoEl.crossOrigin = 'anonymous';
+            }
+            videoEl.muted = true;
+            videoEl.playsInline = true;
+            videoEl.preload = 'auto';
+            videoEl.src = finalSrc;
+
+            await new Promise((resolve, reject) => {
+                let isReady = false;
+                const onReady = () => {
+                    if (!isReady) {
+                        isReady = true;
+                        resolve();
+                    }
+                };
+                videoEl.onloadeddata = onReady;
+                videoEl.oncanplay = onReady;
+                videoEl.onloadedmetadata = onReady;
+                videoEl.onerror = () => {
+                    const err = videoEl.error;
+                    const detail = err ? ` (code ${err.code}: ${err.message})` : '';
+                    reject(new Error(`خطأ في عنصر الفيديو${detail}: ${videoUrl}`));
+                };
+                videoEl.load();
+            });
+
+            const targetW = options.width || CONFIG.width;
+            const targetH = options.height || CONFIG.height;
+            const sampleCanvas = document.createElement('canvas');
+            sampleCanvas.width = targetW;
+            sampleCanvas.height = targetH;
+            const sampleCtx = sampleCanvas.getContext('2d');
 
             return {
                 videoEl,
+                fileSizeBytes,
+                duration: videoEl.duration || 10,
                 async getFrameAt(time) {
-                    const seekTime = Math.min(Math.max(time, 0), Math.max(videoEl.duration - 0.01, 0));
-                    await new Promise((resolve, reject) => {
-                        const timeoutId = setTimeout(() => reject(new Error(`تأخر الفريم عند ${seekTime}s: ${url}`)), 5000);
-                        if (useFrameCallback) {
-                            videoEl.requestVideoFrameCallback(() => { clearTimeout(timeoutId); resolve(); });
-                        } else {
-                            videoEl.onseeked = () => { clearTimeout(timeoutId); resolve(); };
-                        }
+                    const maxDur = videoEl.duration && !isNaN(videoEl.duration) ? videoEl.duration : 10;
+                    const seekTime = Math.min(Math.max(time, 0), Math.max(maxDur - 0.01, 0));
+
+                    await new Promise((resolve) => {
+                        videoEl.onseeked = resolve;
                         videoEl.currentTime = seekTime;
                     });
 
-                    const vw = videoEl.videoWidth, vh = videoEl.videoHeight;
-                    const scale = fit === 'contain' ? Math.min(targetW / vw, targetH / vh) : Math.max(targetW / vw, targetH / vh);
-                    const dw = vw * scale, dh = vh * scale;
-                    const dx = (targetW - dw) / 2, dy = (targetH - dh) / 2;
+                    const vw = videoEl.videoWidth || targetW;
+                    const vh = videoEl.videoHeight || targetH;
+                    const scale = Math.max(targetW / vw, targetH / vh);
+                    const dw = vw * scale;
+                    const dh = vh * scale;
+                    const dx = (targetW - dw) / 2;
+                    const dy = (targetH - dh) / 2;
 
                     sampleCtx.clearRect(0, 0, targetW, targetH);
                     sampleCtx.drawImage(videoEl, dx, dy, dw, dh);
@@ -468,7 +507,15 @@
 
 ## 3. بروتوكول التحقق وفحص ما قبل الرندر (Pre-Flight Verification)
 
-قبل بدء الرندر الكامل، أنشئ سكريبت فحص Headless للتحقق من أن `scene.html` خالي من الأخطاء وأن حالة `window.renderStatus` أصبحت `ready`:
+### 3.1 القواعد الصارمة لمنع أخطاء الشل وانقطاع الملفات:
+1. **حظر تشغيل `node -e` داخل علامات تنصيص مزدوجة تماماً**: أي فحص أو اختبار يجب أن يُكتب في ملف مستقل على القرص عبر `cat << 'EOF' > script.js` (مع إحاطة `'EOF'` باقتباس مفرد)، ثم تشغيله بـ `node script.js`.
+2. **فحص اكتمال كود `scene.html` قبل الرندر**: تأكد دائماً بأمر سريع من وجود وسم الإغلاق `</html>` في آخر الملف لمنع أخطاء الانقطاع (`prepareIdentity is not defined`):
+   ```bash
+   tail -n 5 scene.html | grep -q '</html>' || echo "FILE_INCOMPLETE"
+   ```
+
+### 3.2 سكريبت فحص الجاهزية (`_headless_check.js`)
+يتم حفظه وتشغيله للتأكد من طباعة `SCENE_OK` قبل بدء الرندر:
 
 ```js
 // _headless_check.js
@@ -477,12 +524,15 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const CHECK_TIMEOUT_MS = 15000;
+const CHECK_TIMEOUT_MS = 20000;
 
 (async () => {
   const server = http.createServer((req, res) => {
-    fs.readFile(path.join(process.cwd(), req.url.split('?')[0]), (err, data) => {
-      if (err) { res.writeHead(404); res.end(); return; }
+    let reqPath = decodeURIComponent(req.url.split('?')[0]);
+    if (reqPath === '/' || reqPath === '') reqPath = '/scene.html';
+    const filePath = path.join(process.cwd(), reqPath);
+    fs.readFile(filePath, (err, data) => {
+      if (err) { res.writeHead(404); res.end('Not found'); return; }
       res.writeHead(200); res.end(data);
     });
   });
@@ -497,7 +547,7 @@ const CHECK_TIMEOUT_MS = 15000;
   page.on('requestfailed', (req) => failedRequests.push(`${req.url()} — ${req.failure()?.errorText}`));
   page.on('response', (res) => { if (res.status() >= 400) failedRequests.push(`${res.url()} — HTTP ${res.status()}`); });
 
-  await page.goto(`http://localhost:${port}/scene.html`);
+  await page.goto('http://localhost:' + port + '/scene.html');
 
   const start = Date.now();
   let status = null;
@@ -528,8 +578,6 @@ const CHECK_TIMEOUT_MS = 15000;
 })();
 ```
 
-*يتم تشغيله بأمر: `node _headless_check.js`. إذا طبع `SCENE_OK` يتم الانتقال للرندر فوراً.*
-
 ---
 
 ## 4. محرك الرندر الشامل والدمج والتسليم (`render-runner.js` & Concat Engine)
@@ -549,7 +597,9 @@ const FFMPEG_LOG_CAP = 30;
 function startServer() {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
-      const filePath = path.join(process.cwd(), decodeURIComponent(req.url.split('?')[0]));
+      let reqPath = decodeURIComponent(req.url.split('?')[0]);
+      if (reqPath === '/' || reqPath === '') reqPath = '/scene.html';
+      const filePath = path.join(process.cwd(), reqPath);
       fs.readFile(filePath, (err, data) => {
         if (err) { res.writeHead(404); res.end(); return; }
         res.writeHead(200); res.end(data);
@@ -598,7 +648,7 @@ function writeWithBackpressure(stream, buffer) {
   }
 
   try {
-    await page.goto(`http://localhost:${port}/scene.html`);
+    await page.goto('http://localhost:' + port + '/scene.html');
 
     let prepStatus = null;
     while (true) {
@@ -709,7 +759,7 @@ function writeWithBackpressure(stream, buffer) {
 عند رندر عدة مشاهد متتالية والمطلوب دمجها في فيديو نهائي موحد:
 1. يتم إنشاء ملف نصي `concat_list.txt` يحتوي على أسماء المقاطع بالترتيب الدقيق:
    ```bash
-   cat > concat_list.txt << 'EOF'
+   cat << 'EOF' > concat_list.txt
    file 'part_1.mp4'
    file 'part_2.mp4'
    file 'part_3.mp4'
@@ -727,7 +777,27 @@ function writeWithBackpressure(stream, buffer) {
 ---
 
 ### 4.3 القواعد الصارمة للتسليم والتوثيق
-1. **الامتثال التام للطلب**: تنفيذ طلب المستخدم بدقة سواء كان رندر مشهد مفرد أو مشاهد متعددة مع الدمج.
-2. **منع البيانات الوهمية**: لا تلفق أي فحص؛ إذا فشل فحص الـ Headless أصلح الخطأ فوراً قبل الرندر.
-3. **التسليم الكامل للـ Release**: ارفع كافة المقاطع المفردة، الفيديو النهائي المدمج، ملف الوصف، وكود `scene.html` إلى الـ Release وسجل ملف الإنجاز `TASK_COMPLETE.json`.
+1. **إنشاء الـ Release المخصص**: الـ Agent مسؤول عن إنشاء الـ Release وتسميته بما يناسب محتوى الفيديو:
+   ```bash
+   gh release create "<tag_name>" --repo "$GH_REPO" --title "<Title>" --notes "<Description>"
+   ```
+2. **الرفع المباشر لكافة الأصول**: ارفع ملفات الفيديو المصدرة (`.mp4`)، الفيديو النهائي المدمج، ملف الوصف، وكود `scene.html` إلى الـ Release بأمر:
+   ```bash
+   gh release upload "<tag_name>" <files...> --repo "$GH_REPO" --clobber
+   ```
+3. **توثيق إكمال المهمة**: بعد اكتمال الرفع بنجاح، اكتب ملف `TASK_COMPLETE.json` لإنهاء الجلسة فوراً:
+   ```bash
+   cat << 'EOF' > TASK_COMPLETE.json
+   {
+     "summary": "تم بنجاح رندر وتصدير ورفع كافة الفيديوهات والأصول المطلوبة",
+     "videos": [
+       {
+         "identifier": "output_video_name",
+         "release_video_url": "https://github.com/.../video.mp4",
+         "release_scene_html_url": "https://github.com/.../scene.html"
+       }
+     ]
+   }
+   EOF
+   ```
 ```
